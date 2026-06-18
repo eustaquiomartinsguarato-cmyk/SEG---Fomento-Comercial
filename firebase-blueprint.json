@@ -1,0 +1,50 @@
+{
+  "collections": {
+    "clients": {
+      "id": "string",
+      "name": "string",
+      "document": "string",
+      "email": "string",
+      "phone": "string",
+      "address": "string",
+      "creditLimit": "number",
+      "status": "string",
+      "observations": "string",
+      "createdAt": "timestamp"
+    },
+    "banks": {
+      "id": "string",
+      "name": "string",
+      "code": "string",
+      "agency": "string",
+      "observations": "string"
+    },
+    "transactions": {
+      "id": "string",
+      "clientId": "string",
+      "bankId": "string",
+      "checkNumber": "string",
+      "grossValue": "number",
+      "interestRate": "number",
+      "netValue": "number",
+      "issueDate": "string",
+      "dueDate": "string",
+      "installments": "number",
+      "status": "string",
+      "returnReason": "string?",
+      "returnedAt": "timestamp?",
+      "createdAt": "timestamp"
+    },
+    "users": {
+        "id": "string",
+        "username": "string",
+        "role": "string",
+        "name": "string"
+    },
+    "settings": {
+      "id": "string",
+      "companyName": "string",
+      "defaultInterestRate": "number"
+    }
+  }
+}
