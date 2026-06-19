@@ -8,6 +8,7 @@
   --color-brand-primary: #6382ff;
   --color-brand-dark: #1a1f3a;
   --color-brand-bg: #f5f6fa;
+  --color-zebra-table: #d3e2ef;
 }
 
 @layer base {

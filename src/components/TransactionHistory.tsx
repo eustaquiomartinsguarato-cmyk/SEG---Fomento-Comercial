@@ -15,28 +15,82 @@ import {
   RotateCcw,
   CheckCircle,
   MoreVertical,
-  Building2
+  Building2,
+  Trash2,
+  Edit,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { Client, Bank, Transaction, TransactionStatus } from '../types';
+import { calculateDaysDiff, calculateInstallmentInterest } from '../lib/calculations';
 
 interface HistoryManagerProps {
   transactions: Transaction[];
   clients: Client[];
   banks: Bank[];
   onUpdateStatus: (txId: string, status: TransactionStatus, reason?: string) => void;
+  onDeleteTransaction?: (id: string) => void;
+  onEditTransaction?: (tx: Transaction) => void;
 }
 
 export const TransactionHistory: React.FC<HistoryManagerProps> = ({ 
   transactions, 
   clients, 
   banks, 
-  onUpdateStatus 
+  onUpdateStatus,
+  onDeleteTransaction,
+  onEditTransaction
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [showReturnModal, setShowReturnModal] = useState<string | null>(null);
   const [returnReason, setReturnReason] = useState('');
+  const [sortBy, setSortBy] = useState<'checkNumber_asc' | 'checkNumber_desc' | 'createdAt_desc' | 'createdAt_asc'>('checkNumber_asc');
+
+  // Deletion state
+  const [deletingTxId, setDeletingTxId] = useState<string | null>(null);
+
+  // Editing state
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [editClient, setEditClient] = useState('');
+  const [editBank, setEditBank] = useState('');
+  const [editCheckNumber, setEditCheckNumber] = useState('');
+  const [editIssuer, setEditIssuer] = useState('');
+  const [editGrossValue, setEditGrossValue] = useState(0);
+  const [editInterestRate, setEditInterestRate] = useState(0);
+  const [editIssueDate, setEditIssueDate] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editStatus, setEditStatus] = useState<TransactionStatus>('active');
+
+  const startEdit = (tx: Transaction) => {
+    setEditingTx(tx);
+    setEditClient(tx.clientId);
+    setEditBank(tx.bankId);
+    setEditCheckNumber(tx.checkNumber);
+    setEditIssuer(tx.issuer);
+    setEditGrossValue(tx.grossValue);
+    setEditInterestRate(tx.interestRate);
+    setEditIssueDate(tx.issueDate || tx.createdAt.split('T')[0]);
+    setEditDueDate(tx.dueDate);
+    setEditStatus(tx.status);
+    setActiveMenuId(null);
+  };
+
+  // Live calculation of net value for editing transaction
+  const computedNetValue = (() => {
+    if (!editingTx) return 0;
+    try {
+      const issueDateObj = new Date(editIssueDate + 'T12:00:00');
+      const dueDateObj = new Date(editDueDate + 'T12:00:00');
+      const days = calculateDaysDiff(issueDateObj, dueDateObj);
+      const interest = calculateInstallmentInterest(Number(editGrossValue), Number(editInterestRate), days);
+      const net = Number(editGrossValue) - interest;
+      return net > 0 ? net : 0;
+    } catch {
+      return Number(editGrossValue);
+    }
+  })();
 
   const filtered = transactions.filter(tx => {
     const client = clients.find(c => c.id === tx.clientId);
@@ -46,7 +100,19 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
       tx.issuer.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || tx.status === statusFilter;
     return matchesSearch && matchesStatus;
-  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }).sort((a, b) => {
+    if (sortBy === 'checkNumber_asc') {
+      return a.checkNumber.localeCompare(b.checkNumber, undefined, { numeric: true, sensitivity: 'base' });
+    }
+    if (sortBy === 'checkNumber_desc') {
+      return b.checkNumber.localeCompare(a.checkNumber, undefined, { numeric: true, sensitivity: 'base' });
+    }
+    if (sortBy === 'createdAt_asc') {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    // Default: 'createdAt_desc'
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   const handleExportCSV = () => {
     const headers = ['ID', 'Cliente', 'Emitente', 'Banco', 'Cheque', 'Valor Bruto', 'Valor Líquido', 'Status', 'Vencimento'];
@@ -174,6 +240,20 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
             <option value="returned">DEVOLVIDO</option>
           </select>
         </div>
+
+        <div className="flex items-center gap-2">
+          <ChevronDown className="w-4 h-4 text-slate-400" />
+          <select 
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold uppercase tracking-widest outline-none focus:border-brand-primary"
+          >
+            <option value="checkNumber_asc">Nº CHEQUE (CRESCENTE)</option>
+            <option value="checkNumber_desc">Nº CHEQUE (DECRESCENTE)</option>
+            <option value="createdAt_desc">DATA REGISTRO (MAIS RECENTE)</option>
+            <option value="createdAt_asc">DATA REGISTRO (MAIS ANTIGO)</option>
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -198,13 +278,18 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                   </td>
                 </tr>
               ) : (
-                filtered.map((tx) => {
+                filtered.map((tx, index) => {
                   const client = clients.find(c => c.id === tx.clientId);
                   const bank = banks.find(b => b.id === tx.bankId);
                   const taxValue = tx.grossValue - tx.netValue;
                   
                   return (
-                    <tr key={tx.id} className="hover:bg-slate-50 transition-colors group">
+                    <tr 
+                      key={tx.id} 
+                      className={`transition-colors group ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-zebra-table'
+                      }`}
+                    >
                       <td className="px-6 py-4 text-slate-500">
                         {new Date(tx.createdAt).toLocaleDateString('pt-BR')}
                       </td>
@@ -232,7 +317,9 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                           tx.status === 'liquidated' ? 'bg-emerald-100 text-emerald-700' :
                           'bg-rose-100 text-rose-700'
                         }`}>
-                          {tx.status}
+                          {tx.status === 'active' ? 'ATIVO' :
+                           tx.status === 'liquidated' ? 'LIQUIDADO' :
+                           'DEVOLVIDO'}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right relative">
@@ -242,9 +329,9 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                         >
                           <MoreVertical className="w-4 h-4 text-slate-500" />
                         </button>
-
+                        
                         {activeMenuId === tx.id && (
-                          <div className="absolute right-6 top-12 bg-white rounded-xl shadow-2xl border border-slate-200 w-48 py-2 z-20 animate-in fade-in zoom-in duration-150">
+                          <div className="absolute right-6 top-12 bg-white rounded-xl shadow-2xl border border-slate-200 w-52 py-2 z-20 animate-in fade-in zoom-in duration-150">
                             {tx.status === 'active' && (
                               <>
                                 <button 
@@ -269,6 +356,19 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                                 <ArrowUpRight className="w-4 h-4" /> Reativar Operação
                               </button>
                             )}
+                            <div className="border-t border-slate-100 my-1" />
+                            <button 
+                              onClick={() => startEdit(tx)}
+                              className="w-full h-10 px-4 text-left text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            >
+                              <Edit className="w-4 h-4 text-slate-400" /> Editar Lançamento
+                            </button>
+                            <button 
+                              onClick={() => { setDeletingTxId(tx.id); setActiveMenuId(null); }}
+                              className="w-full h-10 px-4 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" /> Excluir Lançamento
+                            </button>
                           </div>
                         )}
                       </td>
@@ -326,6 +426,287 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
+      {deletingTxId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-8 border-b border-slate-100 flex items-center gap-3 bg-rose-50/50">
+              <div className="p-2.5 bg-rose-100 text-rose-600 rounded-2xl">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-900">Excluir Lançamento?</h2>
+                <p className="text-xs text-rose-600 font-bold uppercase tracking-wider">Aviso de segurança</p>
+              </div>
+            </div>
+            
+            <div className="p-8 space-y-6">
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Tem certeza que deseja excluir esta transação de cheque definitivamente? 
+                Esta ação <strong>excluirá de forma permanente</strong> os registros do banco de dados e não poderá ser desfeita.
+              </p>
+
+              {(() => {
+                const tx = transactions.find(t => t.id === deletingTxId);
+                if (!tx) return null;
+                const client = clients.find(c => c.id === tx.clientId);
+                return (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2">
+                    <div className="flex justify-between"><span className="text-slate-400">Cliente:</span> <span className="font-bold text-slate-700">{client?.name}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Emitente:</span> <span className="font-bold text-slate-700">{tx.issuer}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Nº Cheque:</span> <span className="font-bold text-slate-700">{tx.checkNumber}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400 font-medium">Valor Bruto:</span> <span className="font-black text-rose-600">R$ {tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
+                  </div>
+                );
+              })()}
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  onClick={() => setDeletingTxId(null)}
+                  className="flex-1 py-3.5 px-4 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all uppercase tracking-wider text-xs"
+                >
+                  Não, Cancelar
+                </button>
+                <button 
+                  onClick={() => {
+                    if (onDeleteTransaction) {
+                      onDeleteTransaction(deletingTxId);
+                    }
+                    setDeletingTxId(null);
+                  }}
+                  className="flex-1 py-3.5 px-4 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-100 uppercase tracking-wider text-xs"
+                >
+                  Sim, Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE EDIÇÃO DE TRANSAÇÃO */}
+      {editingTx && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in duration-200">
+            <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-brand-primary/10 text-brand-primary rounded-xl">
+                  <Edit className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-800">Editar Detalhes do Lançamento</h2>
+                  <p className="text-xs text-slate-500">Modifique as informações e recalcule as taxas da operação.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setEditingTx(null)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (onEditTransaction && editingTx) {
+                // Live recalculation of Net Value
+                const issueDateObj = new Date(editIssueDate + 'T12:00:00');
+                const dueDateObj = new Date(editDueDate + 'T12:00:00');
+                const days = calculateDaysDiff(issueDateObj, dueDateObj);
+                const interest = calculateInstallmentInterest(Number(editGrossValue), Number(editInterestRate), days);
+                const net = Number(editGrossValue) - interest;
+                const finalNet = net > 0 ? net : 0;
+
+                const updated: Transaction = {
+                  ...editingTx,
+                  clientId: editClient,
+                  bankId: editBank,
+                  checkNumber: editCheckNumber,
+                  issuer: editIssuer,
+                  grossValue: Number(editGrossValue),
+                  interestRate: Number(editInterestRate),
+                  netValue: finalNet,
+                  issueDate: editIssueDate,
+                  dueDate: editDueDate,
+                  status: editStatus
+                };
+                
+                if (window.confirm("Deseja realmente salvar estas alterações permanentes no cheque?")) {
+                  onEditTransaction(updated);
+                  setEditingTx(null);
+                }
+              }
+            }} className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* CLIENT SELECT */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Cliente Participante</label>
+                  <select 
+                    required
+                    value={editClient}
+                    onChange={(e) => setEditClient(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  >
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* BANK SELECT */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Banco</label>
+                  <select 
+                    required
+                    value={editBank}
+                    onChange={(e) => setEditBank(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  >
+                    {banks.map(b => (
+                      <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* EMITENTE */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Emitente do Cheque</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editIssuer}
+                    onChange={(e) => setEditIssuer(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                {/* CHECK NUMBER */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nº Cheque</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editCheckNumber}
+                    onChange={(e) => setEditCheckNumber(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                {/* GROSS VALUE */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Valor Bruto (R$)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    required
+                    value={editGrossValue}
+                    onChange={(e) => setEditGrossValue(Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                {/* INTEREST RATE */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Taxa de Juros Mensal (%)</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    required
+                    value={editInterestRate}
+                    onChange={(e) => setEditInterestRate(Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                {/* ISSUE DATE */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Data de Emissão (ou Início)</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={editIssueDate}
+                    onChange={(e) => setEditIssueDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                {/* DUE DATE */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Data de Vencimento</label>
+                  <input 
+                    type="date" 
+                    required
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  />
+                </div>
+
+                {/* STATUS CHANGER */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Situação do Lançamento</label>
+                  <select 
+                    required
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  >
+                    <option value="active">ATIVO (EM ABERTO)</option>
+                    <option value="liquidated">LIQUIDADO (PAGO)</option>
+                    <option value="returned">DEVOLVIDO (ALÍNEA)</option>
+                  </select>
+                </div>
+
+                {/* CALCULATED DAYS */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Prazo Calculado (Dias)</label>
+                  <div className="px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm font-bold text-slate-600">
+                    {(() => {
+                      try {
+                        const inD = new Date(editIssueDate + 'T12:00:00');
+                        const outD = new Date(editDueDate + 'T12:00:00');
+                        return calculateDaysDiff(inD, outD);
+                      } catch {
+                        return 0;
+                      }
+                    })()} dias
+                  </div>
+                </div>
+              </div>
+
+              {/* DYNAMIC CALCULATION DISPLAY */}
+              <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">Novo Líquido Estimado</span>
+                  <p className="text-xs text-slate-500 mt-0.5">Calculado automaticamente com base na taxa e no prazo alterados.</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-black text-indigo-700">
+                    R$ {computedNetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-100">
+                <button 
+                  type="button"
+                  onClick={() => setEditingTx(null)}
+                  className="py-3 px-6 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all text-xs"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="py-3 px-8 bg-brand-primary text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 text-xs"
+                >
+                  Confirmar e Salvar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

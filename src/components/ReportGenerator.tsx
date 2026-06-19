@@ -236,8 +236,13 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-[13px]">
-                  {filteredTransactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
+                  {filteredTransactions.map((tx, index) => (
+                    <tr 
+                      key={tx.id} 
+                      className={`transition-colors ${
+                        index % 2 === 0 ? 'bg-white' : 'bg-zebra-table'
+                      }`}
+                    >
                       <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
                         {new Date(tx.createdAt).toLocaleDateString('pt-BR')}
                       </td>
@@ -267,7 +272,9 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
                           tx.status === 'liquidated' ? 'bg-emerald-100 text-emerald-700' :
                           'bg-rose-100 text-rose-700'
                         }`}>
-                          {tx.status}
+                          {tx.status === 'active' ? 'ATIVO' :
+                           tx.status === 'liquidated' ? 'LIQUIDADO' :
+                           'DEVOLVIDO'}
                         </span>
                       </td>
                     </tr>

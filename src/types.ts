@@ -50,6 +50,10 @@ export interface Transaction {
   status: TransactionStatus;
   returnReason?: string;
   returnedAt?: string;
+  returnedInterestRate?: number;
+  returnedFine?: number;
+  resolvedAt?: string;
+  resolvedAmount?: number;
   createdAt: string;
 }
 
@@ -57,6 +61,8 @@ export interface SystemSettings {
   companyName: string;
   defaultInterestRate: number;
   logoUrl?: string;
+  defaultReturnedInterestRate?: number;
+  defaultReturnedFine?: number;
 }
 
 export interface AppUser {

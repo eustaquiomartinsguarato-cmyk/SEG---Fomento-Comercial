@@ -11,6 +11,7 @@ import { BankManager } from './components/BankManager';
 import { DiscountForm } from './components/DiscountForm';
 import { TransactionHistory } from './components/TransactionHistory';
 import { ReportGenerator } from './components/ReportGenerator';
+import { ReturnedChecksManager } from './components/ReturnedChecksManager';
 import { LoginPage, UserRole } from './components/LoginPage';
 import { 
   View, 
@@ -38,7 +39,9 @@ export default function App() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [settings, setSettings] = useState<SystemSettings>({
     companyName: 'S.E.G',
-    defaultInterestRate: 3.5
+    defaultInterestRate: 3.5,
+    defaultReturnedInterestRate: 5.0,
+    defaultReturnedFine: 2.0
   });
 
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
@@ -215,6 +218,18 @@ export default function App() {
     }
   };
 
+  const handleUpdateClientStatus = async (clientId: string, status: 'active' | 'blocked') => {
+    setLoading(true);
+    try {
+      const client = clients.find(c => c.id === clientId);
+      if (client) {
+        await saveItem('clients', { ...client, status });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpdateTransaction = async (id: string, status: TransactionStatus, reason?: string) => {
     setLoading(true);
     try {
@@ -240,6 +255,24 @@ export default function App() {
     }
   };
 
+  const handleDeleteTransaction = async (id: string) => {
+    setLoading(true);
+    try {
+      await deleteItem('transactions', id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditTransaction = async (updatedTx: Transaction) => {
+    setLoading(true);
+    try {
+      await saveItem('transactions', updatedTx);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (session?.role !== 'admin') {
@@ -251,6 +284,8 @@ export default function App() {
       const newSettings: any = {
         companyName: formData.get('companyName') as string,
         defaultInterestRate: Number(formData.get('defaultInterestRate')),
+        defaultReturnedInterestRate: Number(formData.get('defaultReturnedInterestRate')),
+        defaultReturnedFine: Number(formData.get('defaultReturnedFine')),
         id: settings.id || 'main-settings'
       };
       await saveItem('settings', newSettings);
@@ -285,7 +320,16 @@ export default function App() {
       case 'discount':
         return <DiscountForm clients={clients} banks={banks} settings={settings} onConfirm={handleNewTransaction} />;
       case 'history':
-        return <TransactionHistory transactions={transactions} clients={clients} banks={banks} onUpdateStatus={handleUpdateTransaction} />;
+        return (
+          <TransactionHistory 
+            transactions={transactions} 
+            clients={clients} 
+            banks={banks} 
+            onUpdateStatus={handleUpdateTransaction} 
+            onDeleteTransaction={handleDeleteTransaction}
+            onEditTransaction={handleEditTransaction}
+          />
+        );
       case 'report-client':
       case 'report-period':
       case 'report-date':
@@ -294,11 +338,13 @@ export default function App() {
         return <UserManager users={users} onSave={handleSaveUser} onDelete={handleDeleteUser} />;
       case 'returned':
         return (
-          <TransactionHistory 
-            transactions={transactions.filter(t => t.status === 'returned')} 
+          <ReturnedChecksManager 
+            transactions={transactions} 
             clients={clients} 
             banks={banks} 
-            onUpdateStatus={handleUpdateTransaction} 
+            settings={settings}
+            onEditTransaction={handleEditTransaction}
+            onUpdateClientStatus={handleUpdateClientStatus}
           />
         );
       case 'settings':
@@ -323,6 +369,22 @@ export default function App() {
                   <div className="relative">
                     <input name="defaultInterestRate" type="number" step="0.1" defaultValue={settings.defaultInterestRate} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:border-brand-primary" />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Taxa Juros Devolvido (% ao Mês)</label>
+                    <div className="relative">
+                      <input name="defaultReturnedInterestRate" type="number" step="0.1" defaultValue={settings.defaultReturnedInterestRate ?? 5.0} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:border-brand-primary" />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Multa Adicional Devolvido (%)</label>
+                    <div className="relative">
+                      <input name="defaultReturnedFine" type="number" step="0.1" defaultValue={settings.defaultReturnedFine ?? 2.0} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none focus:border-brand-primary" />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+                    </div>
                   </div>
                 </div>
                 <button type="submit" className="bg-brand-primary text-white w-full py-4 rounded-xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-600 transition-all">

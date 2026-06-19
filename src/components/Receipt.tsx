@@ -109,9 +109,13 @@ export const Receipt: React.FC<ReceiptProps> = ({ transactions, client, banks, s
 
   return (
     <div className="receipt-container p-4 max-w-4xl mx-auto">
-      <ReceiptContent copyLabel="Via do Cliente" />
-      <div className="border-t-2 border-dashed border-slate-400 my-8 print:my-12 opacity-50" />
-      <ReceiptContent copyLabel="Via da Empresa / Arquivo" />
+      <div className="print:break-after-page print:mb-0" style={{ pageBreakAfter: 'always', breakAfter: 'page' }}>
+        <ReceiptContent copyLabel="Via do Cliente" />
+      </div>
+      <div className="border-t-2 border-dashed border-slate-400 my-8 print:hidden opacity-50" />
+      <div>
+        <ReceiptContent copyLabel="Via da Empresa / Arquivo" />
+      </div>
     </div>
   );
 };

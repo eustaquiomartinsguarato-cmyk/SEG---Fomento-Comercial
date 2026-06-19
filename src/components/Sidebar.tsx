@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, auth
     { type: 'divider', label: 'Operações' },
     { id: 'discount', label: 'Desconto de Cheques', icon: CreditCard },
     { id: 'history', label: 'Histórico de Transações', icon: History },
-    { id: 'returned', label: 'Cheques Devolvidos', icon: RotateCcw },
+    { id: 'returned', label: 'Cheques Devolvidos a Receber', icon: RotateCcw },
     { type: 'divider', label: 'Relatórios' },
     { id: 'report-client', label: 'Por Cliente', icon: BarChart3 },
     { id: 'report-period', label: 'Por Período', icon: Calendar },

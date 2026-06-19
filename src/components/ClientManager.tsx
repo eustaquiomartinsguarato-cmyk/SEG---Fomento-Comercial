@@ -140,8 +140,13 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onSave, o
                   </td>
                 </tr>
               ) : (
-                filteredClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-slate-50 transition-colors">
+                filteredClients.map((client, index) => (
+                  <tr 
+                    key={client.id} 
+                    className={`transition-colors ${
+                      index % 2 === 0 ? 'bg-white' : 'bg-zebra-table'
+                    }`}
+                  >
                     <td className="px-6 py-4">
                       <div className="font-semibold text-slate-800">{client.name}</div>
                       <div className="text-[10px] text-slate-500">{client.document}</div>

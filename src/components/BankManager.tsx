@@ -126,8 +126,13 @@ export const BankManager: React.FC<BankManagerProps> = ({ banks, onSave, onDelet
                   </td>
                 </tr>
               ) : (
-                filteredBanks.map((bank) => (
-                  <tr key={bank.id} className="hover:bg-slate-50 transition-colors">
+                filteredBanks.map((bank, index) => (
+                  <tr 
+                    key={bank.id} 
+                    className={`transition-colors ${
+                      index % 2 === 0 ? 'bg-white' : 'bg-zebra-table'
+                    }`}
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-slate-100 rounded-lg">

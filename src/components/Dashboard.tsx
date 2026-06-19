@@ -95,10 +95,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions }) =
                     </td>
                   </tr>
                 ) : (
-                  lastTransactions.map((tx) => {
+                  lastTransactions.map((tx, index) => {
                     const client = clients.find(c => c.id === tx.clientId);
                     return (
-                      <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
+                      <tr 
+                        key={tx.id} 
+                        className={`transition-colors ${
+                          index % 2 === 0 ? 'bg-white' : 'bg-zebra-table'
+                        }`}
+                      >
                         <td className="px-6 py-4 font-medium text-slate-700">{client?.name || 'Desconhecido'}</td>
                         <td className="px-6 py-4 text-slate-500">{new Date(tx.createdAt).toLocaleDateString('pt-BR')}</td>
                         <td className="px-6 py-4 font-semibold text-slate-800">
@@ -106,11 +111,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions }) =
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                            tx.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                            tx.status === 'returned' ? 'bg-rose-100 text-rose-700' :
-                            'bg-slate-100 text-slate-600'
+                            tx.status === 'active' ? 'bg-indigo-100 text-indigo-700' :
+                            tx.status === 'liquidated' ? 'bg-emerald-100 text-emerald-700' :
+                            'bg-rose-100 text-rose-700'
                           }`}>
-                            {tx.status}
+                            {tx.status === 'active' ? 'ATIVO' :
+                             tx.status === 'liquidated' ? 'LIQUIDADO' :
+                             'DEVOLVIDO'}
                           </span>
                         </td>
                       </tr>
