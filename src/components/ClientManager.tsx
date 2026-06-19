@@ -34,7 +34,8 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onSave, o
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.document.includes(searchTerm)
+    c.document.includes(searchTerm) ||
+    (c.code && c.code.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -45,6 +46,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onSave, o
       
       const clientData: Client = {
         id: editingClient?.id || generateId(),
+        code: (formData.get('code') as string || '').substring(0, 5) || undefined,
         name: formData.get('name') as string,
         document: formData.get('document') as string,
         email: formData.get('email') as string,
@@ -148,7 +150,14 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onSave, o
                     }`}
                   >
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-800">{client.name}</div>
+                      <div className="font-semibold text-slate-800 flex items-center gap-2">
+                        {client.name}
+                        {client.code && (
+                          <span className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded text-[9px] font-mono leading-none">
+                            CÓD: {client.code}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-slate-500">{client.document}</div>
                     </td>
                     <td className="px-6 py-4 space-y-1">
@@ -219,13 +228,23 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onSave, o
             </div>
             <form onSubmit={handleSave} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome Completo</label>
-                  <input required name="name" defaultValue={editingClient?.name} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:border-brand-primary" placeholder="Ex: João Silva" />
+                <div className="space-y-1 col-span-full md:col-span-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Código (até 5 dígitos)</label>
+                  <input 
+                    name="code" 
+                    maxLength={5} 
+                    defaultValue={editingClient?.code || ''} 
+                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:border-brand-primary placeholder-slate-400 font-mono" 
+                    placeholder="Ex: 12345" 
+                  />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 col-span-full md:col-span-1">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">CPF/CNPJ</label>
                   <input required name="document" defaultValue={editingClient?.document} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:border-brand-primary" placeholder="000.000.000-00" />
+                </div>
+                <div className="col-span-full space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nome Completo</label>
+                  <input required name="name" defaultValue={editingClient?.name} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 outline-none focus:border-brand-primary" placeholder="Ex: João Silva" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">E-mail</label>

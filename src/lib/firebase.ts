@@ -197,13 +197,29 @@ export const saveItem = async (collName: string, item: any) => {
 
   // 2. Safely attempt Firestore commit
   try {
+    const removeUndefined = (obj: any): any => {
+      const clean: any = {};
+      for (const [key, val] of Object.entries(obj)) {
+        if (val !== undefined) {
+          if (val !== null && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+            clean[key] = removeUndefined(val);
+          } else {
+            clean[key] = val;
+          }
+        }
+      }
+      return clean;
+    };
+
     if (dataToSave.id && !dataToSave.id.toString().includes('-temp')) {
       const { id, ...finalData } = dataToSave;
-      await setDoc(doc(db, collName, id), finalData);
+      const cleanData = removeUndefined(finalData);
+      await setDoc(doc(db, collName, id), cleanData);
       return id;
     } else {
       const { id, ...finalData } = dataToSave;
-      const docRef = await addDoc(collection(db, collName), finalData);
+      const cleanData = removeUndefined(finalData);
+      const docRef = await addDoc(collection(db, collName), cleanData);
       return docRef.id;
     }
   } catch (error) {

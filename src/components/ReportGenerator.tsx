@@ -92,7 +92,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
               className="w-full md:w-80 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-brand-primary"
             >
               <option value="">Selecione um cliente...</option>
-              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name} {c.code ? `[CÓD: ${c.code}]` : ''}</option>)}
             </select>
           </div>
         );

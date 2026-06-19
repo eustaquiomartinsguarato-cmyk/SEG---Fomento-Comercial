@@ -140,10 +140,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
     if (otherReturned.length === 0) {
       const client = clients.find(c => c.id === settlingTx.clientId);
       if (client && client.status === 'blocked') {
-        const confirmUnblock = window.confirm(
-          `O cliente ${client.name} não possui mais nenhum cheque devolvido em aberto. Deseja desbloquear o seu cadastro automaticamente?`
-        );
-        if (confirmUnblock && onUpdateClientStatus) {
+        if (onUpdateClientStatus) {
           onUpdateClientStatus(client.id, 'active');
         }
       }

@@ -247,6 +247,14 @@ export default function App() {
           if (client && client.status === 'active') {
              await saveItem('clients', { ...client, status: 'blocked' });
           }
+        } else if (status === 'liquidated' || status === 'active') {
+          const client = clients.find(c => c.id === tx.clientId);
+          if (client && client.status === 'blocked') {
+            const otherReturned = transactions.filter(t => t.clientId === client.id && t.status === 'returned' && t.id !== tx.id);
+            if (otherReturned.length === 0) {
+              await saveItem('clients', { ...client, status: 'active' });
+            }
+          }
         }
         await saveItem('transactions', updatedTx);
       }
@@ -267,6 +275,20 @@ export default function App() {
   const handleEditTransaction = async (updatedTx: Transaction) => {
     setLoading(true);
     try {
+      if (updatedTx.status === 'returned') {
+        const client = clients.find(c => c.id === updatedTx.clientId);
+        if (client && client.status === 'active') {
+          await saveItem('clients', { ...client, status: 'blocked' });
+        }
+      } else if (updatedTx.status === 'liquidated' || updatedTx.status === 'active') {
+        const client = clients.find(c => c.id === updatedTx.clientId);
+        if (client && client.status === 'blocked') {
+          const otherReturned = transactions.filter(t => t.clientId === client.id && t.status === 'returned' && t.id !== updatedTx.id);
+          if (otherReturned.length === 0) {
+            await saveItem('clients', { ...client, status: 'active' });
+          }
+        }
+      }
       await saveItem('transactions', updatedTx);
     } finally {
       setLoading(false);

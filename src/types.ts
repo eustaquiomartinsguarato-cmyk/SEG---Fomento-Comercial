@@ -8,6 +8,7 @@ export type TransactionStatus = 'active' | 'returned' | 'liquidated';
 
 export interface Client {
   id: string;
+  code?: string;
   name: string;
   document: string; // CPF or CNPJ
   email: string;

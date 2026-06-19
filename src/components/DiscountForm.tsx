@@ -281,7 +281,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
                   <option value="">Selecione o cliente...</option>
                   {clients.map(c => (
                     <option key={c.id} value={c.id} disabled={c.status === 'blocked'}>
-                      {c.name} {c.status === 'blocked' ? '(BLOQUEADO)' : ''}
+                      {c.name} {c.code ? `[CÓD: ${c.code}]` : ''} {c.status === 'blocked' ? '(BLOQUEADO)' : ''}
                     </option>
                   ))}
                 </select>

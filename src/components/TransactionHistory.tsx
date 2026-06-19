@@ -535,10 +535,8 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                   status: editStatus
                 };
                 
-                if (window.confirm("Deseja realmente salvar estas alterações permanentes no cheque?")) {
-                  onEditTransaction(updated);
-                  setEditingTx(null);
-                }
+                onEditTransaction(updated);
+                setEditingTx(null);
               }
             }} className="p-8 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
