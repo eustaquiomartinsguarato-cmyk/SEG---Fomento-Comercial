@@ -284,6 +284,9 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                   const client = clients.find(c => c.id === tx.clientId);
                   const bank = banks.find(b => b.id === tx.bankId);
                   const taxValue = tx.grossValue - tx.netValue;
+                  const days = tx.issueDate && tx.dueDate 
+                    ? calculateDaysDiff(new Date(tx.issueDate + 'T12:00:00'), new Date(tx.dueDate + 'T12:00:00'))
+                    : (tx.createdAt && tx.dueDate ? calculateDaysDiff(new Date(tx.createdAt), new Date(tx.dueDate)) : 0);
                   
                   return (
                     <tr 
@@ -311,7 +314,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                             <span className="text-xs text-indigo-600 font-medium truncate">Emitente: {tx.issuer}</span>
                           </div>
                           <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <Building2 className="w-3 h-3" /> {bank?.name} • Ref: {tx.checkNumber}
+                            <Building2 className="w-3 h-3" /> {bank?.name} • Ref: {tx.checkNumber} • <strong className="text-slate-700">QT.DIAS: {days}</strong>
                           </span>
                         </div>
                       </td>
