@@ -334,7 +334,7 @@ export default function App() {
   const renderContent = () => {
     switch (activeView) {
       case 'dashboard':
-        return <Dashboard clients={clients} transactions={transactions} role={session?.role} onNavigate={setActiveView} />;
+        return <Dashboard clients={clients} transactions={transactions} banks={banks} role={session?.role} onNavigate={setActiveView} />;
       case 'clients':
         return <ClientManager clients={clients} onSave={handleSaveClient} onDelete={handleDeleteClient} role={session?.role} />;
       case 'banks':
@@ -356,6 +356,8 @@ export default function App() {
       case 'report-type':
       case 'report-period':
       case 'report-date':
+      case 'report-returned':
+      case 'report-open':
         return <ReportGenerator view={activeView} transactions={transactions} clients={clients} banks={banks} />;
       case 'users':
         return <UserManager users={users} onSave={handleSaveUser} onDelete={handleDeleteUser} />;

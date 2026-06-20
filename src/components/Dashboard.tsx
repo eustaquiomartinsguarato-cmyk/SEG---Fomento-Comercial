@@ -16,19 +16,21 @@ import {
   CalendarCheck,
   AlertTriangle,
   ChevronRight,
-  CreditCard
+  CreditCard,
+  FileText
 } from 'lucide-react';
-import { Client, Transaction } from '../types';
+import { Client, Transaction, Bank } from '../types';
 import { motion } from 'motion/react';
 
 interface DashboardProps {
   clients: Client[];
   transactions: Transaction[];
+  banks: Bank[];
   role: string | undefined;
   onNavigate: (view: any) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, role, onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, banks, role, onNavigate }) => {
   const activeClients = clients.filter(c => c.status === 'active').length;
   const blockedClients = clients.filter(c => c.status === 'blocked').length;
   const openValue = transactions
@@ -66,7 +68,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, rol
   const promissoriaPct = totalActive > 0 ? (promissoriaSum / totalActive) * 100 : 0;
   const notaFiscalPct = totalActive > 0 ? (notaFiscalSum / totalActive) * 100 : 0;
 
-  // 2. Maturity / Cash Flow Projection
+  // 2. Today's Maturities (Vencimentos do Dia) - Organizados por abas
+  const [todayTab, setTodayTab] = React.useState<'cheque' | 'promissoria' | 'nota_fiscal'>('cheque');
+
+  const getLocalDateString = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayStr = getLocalDateString(new Date());
+
+  const activeTxToday = transactions.filter(t => t.status === 'active' && t.dueDate === todayStr);
+
+  const todayCheques = activeTxToday.filter(t => !t.operationType || t.operationType === 'cheque');
+  const todayPromissorias = activeTxToday.filter(t => t.operationType === 'promissoria');
+  const todayNotasFiscais = activeTxToday.filter(t => t.operationType === 'nota_fiscal');
+
+  const todayChequeSum = todayCheques.reduce((sum, t) => sum + t.grossValue, 0);
+  const todayPromissoriaSum = todayPromissorias.reduce((sum, t) => sum + t.grossValue, 0);
+  const todayNotaFiscalSum = todayNotasFiscais.reduce((sum, t) => sum + t.grossValue, 0);
+
+  // 3. Maturity / Cash Flow Projection
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -74,7 +97,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, rol
     overdue: { label: 'Vencidos / Atrasados', amount: 0, count: 0, color: 'text-rose-600', barBg: 'bg-rose-500' },
     next7: { label: '1 a 7 Dias', amount: 0, count: 0, color: 'text-amber-600', barBg: 'bg-amber-500' },
     next15: { label: '8 a 15 Dias', amount: 0, count: 0, color: 'text-indigo-600', barBg: 'bg-indigo-500' },
-    next30: { label: '16 a 30 Dias', amount: 0, count: 0, color: 'text-blue-600', barBg: 'bg-blue-500' },
+    next30: { label: '16 a 30 Dias', amount: 0, count: 0, color: 'text-blue-600', barBg: 'bg-blue-50' },
     beyond30: { label: 'Em dia (30+ Dias)', amount: 0, count: 0, color: 'text-emerald-600', barBg: 'bg-emerald-500' },
   };
 
@@ -105,7 +128,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, rol
 
   const maxProjectionValue = Math.max(...Object.values(projection).map(p => p.amount), 1);
 
-  // 3. Credit Limit Utilization Monitor
+  // 4. Credit Limit Utilization Monitor
   const clientExposure = clients.map(client => {
     const clientTx = transactions.filter(t => t.clientId === client.id && (t.status === 'active' || t.status === 'returned'));
     const totalExposure = clientTx.reduce((sum, t) => sum + t.grossValue, 0);
@@ -155,6 +178,265 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, rol
           </motion.div>
         ))}
       </div>
+
+      {/* Seção Vencimentos de Hoje por Abas */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden"
+      >
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="flex h-2.5 w-2.5 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span>
+              </span>
+              <h2 className="font-bold text-slate-800 text-base">📌 Compromissos e Vencimentos de Hoje</h2>
+            </div>
+            <p className="text-slate-500 text-xs mt-1">Monitore e gerencie cheques a receber, promissórias e notas fiscais agendadas para o dia atual.</p>
+          </div>
+          <div className="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm flex items-center gap-1.5 self-start md:self-auto uppercase">
+            📅 {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}
+          </div>
+        </div>
+
+        {/* Abas de Navegação */}
+        <div className="flex border-b border-slate-100 bg-slate-50/25 p-2 gap-2 overflow-x-auto">
+          <button
+            onClick={() => setTodayTab('cheque')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              todayTab === 'cheque'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            <span>Cheques para Depósito</span>
+            <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${
+              todayTab === 'cheque' ? 'bg-indigo-700 text-white' : 'bg-slate-200 text-slate-700'
+            }`}>
+              {todayCheques.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setTodayTab('promissoria')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              todayTab === 'promissoria'
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            <CalendarCheck className="w-3.5 h-3.5" />
+            <span>Promissórias</span>
+            <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${
+              todayTab === 'promissoria' ? 'bg-amber-600 text-white' : 'bg-slate-200 text-slate-700'
+            }`}>
+              {todayPromissorias.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setTodayTab('nota_fiscal')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              todayTab === 'nota_fiscal'
+                ? 'bg-blue-500 text-white shadow-sm'
+                : 'hover:bg-slate-100 text-slate-600'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Notas Fiscais</span>
+            <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${
+              todayTab === 'nota_fiscal' ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
+            }`}>
+              {todayNotasFiscais.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Listagem da Aba Selecionada */}
+        <div className="p-4">
+          {todayTab === 'cheque' && (
+            <div className="space-y-4">
+              {todayCheques.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm italic font-medium">
+                  Nenhum cheque para depósito programado para hoje.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                      <tr>
+                        <th className="px-4 py-2">Cliente / Emitente</th>
+                        <th className="px-4 py-2">Banco / Referência</th>
+                        <th className="px-4 py-2 text-right">Valor Bruto</th>
+                        <th className="px-4 py-2 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {todayCheques.map((tx) => {
+                        const client = clients.find(c => c.id === tx.clientId);
+                        const bank = banks.find(b => b.id === tx.bankId);
+                        return (
+                          <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="font-bold text-slate-800 text-xs">{client?.name || 'Desconhecido'}</div>
+                              <div className="text-[10px] text-indigo-600 font-medium">Emitente: {tx.issuer}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="text-[10px] font-semibold text-slate-700">{bank?.name || '-'}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">Nº Ref: {tx.checkNumber}</div>
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-slate-800 text-xs">
+                              R$ {tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => onNavigate('history')}
+                                className="text-[10px] text-indigo-600 hover:text-indigo-850 font-bold bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded transition-all"
+                              >
+                                Ver Histórico
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-slate-50/50 font-bold border-t border-slate-100 text-[11px]">
+                      <tr>
+                        <td colSpan={2} className="px-4 py-2.5 text-slate-600">Total de Cheques de Hoje:</td>
+                        <td className="px-4 py-2.5 text-right text-indigo-700">
+                          R$ {todayChequeSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {todayTab === 'promissoria' && (
+            <div className="space-y-4">
+              {todayPromissorias.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm italic font-medium">
+                  Nenhuma promissória vencendo hoje.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                      <tr>
+                        <th className="px-4 py-2">Cliente / Emitente</th>
+                        <th className="px-4 py-2">Referência Documento</th>
+                        <th className="px-4 py-2 text-right">Valor Bruto</th>
+                        <th className="px-4 py-2 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {todayPromissorias.map((tx) => {
+                        const client = clients.find(c => c.id === tx.clientId);
+                        return (
+                          <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="font-bold text-slate-800 text-xs">{client?.name || 'Desconhecido'}</div>
+                              <div className="text-[10px] text-amber-600 font-medium">Emitente/Devedor: {tx.issuer}</div>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[10px] text-slate-600">
+                              Ref: {tx.checkNumber}
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-slate-800 text-xs">
+                              R$ {tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => onNavigate('history')}
+                                className="text-[10px] text-amber-600 hover:text-amber-805 font-bold bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded transition-all"
+                              >
+                                Ver Histórico
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-slate-50/50 font-bold border-t border-slate-100 text-[11px]">
+                      <tr>
+                        <td colSpan={2} className="px-4 py-2.5 text-slate-600">Total de Promissórias de Hoje:</td>
+                        <td className="px-4 py-2.5 text-right text-amber-700">
+                          R$ {todayPromissoriaSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {todayTab === 'nota_fiscal' && (
+            <div className="space-y-4">
+              {todayNotasFiscais.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm italic font-medium">
+                  Nenhuma nota fiscal vencendo hoje.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                      <tr>
+                        <th className="px-4 py-2">Cliente / Pagador</th>
+                        <th className="px-4 py-2">Número da Nota Fiscal</th>
+                        <th className="px-4 py-2 text-right">Valor Bruto</th>
+                        <th className="px-4 py-2 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {todayNotasFiscais.map((tx) => {
+                        const client = clients.find(c => c.id === tx.clientId);
+                        return (
+                          <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="font-bold text-slate-800 text-xs">{client?.name || 'Desconhecido'}</div>
+                              <div className="text-[10px] text-blue-600 font-medium">Sacado: {tx.issuer}</div>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[10px] text-slate-600">
+                              NF Nº: {tx.checkNumber}
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-slate-800 text-xs">
+                              R$ {tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => onNavigate('history')}
+                                className="text-[10px] text-blue-600 hover:text-blue-805 font-bold bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded transition-all"
+                              >
+                                Ver Histórico
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-slate-50/50 font-bold border-t border-slate-100 text-[11px]">
+                      <tr>
+                        <td colSpan={2} className="px-4 py-2.5 text-slate-600">Total de Notas Fiscais de Hoje:</td>
+                        <td className="px-4 py-2.5 text-right text-blue-700">
+                          R$ {todayNotaFiscalSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
 
       {/* Analytics Bento Grid (Enhancements!) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -404,7 +686,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, rol
             </div>
           </div>
 
-          {/* New Panel: Credit Limit Monitor */}
+          {/* Panel: Credit Limit Monitor */}
           {criticalExposures.length > 0 && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}

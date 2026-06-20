@@ -90,7 +90,8 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clientId || !bankId || !value || !dueDate) return;
+    const isBankRequired = operationType === 'cheque';
+    if (!clientId || (isBankRequired && !bankId) || !value || !dueDate) return;
 
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -297,10 +298,10 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
 
             <div className="col-span-full space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Building className="w-3 h-3" /> Selecionar Banco
+                <Building className="w-3 h-3" /> Selecionar Banco {operationType !== 'cheque' && <span className="text-[10px] lowercase text-slate-400 font-normal">(opcional)</span>}
               </label>
               <select 
-                required
+                required={operationType === 'cheque'}
                 value={bankId}
                 onChange={(e) => setBankId(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-primary"

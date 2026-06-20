@@ -46,10 +46,14 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
         });
       case 'report-date':
         return transactions.filter(tx => tx.createdAt.split('T')[0] === specificDate);
+      case 'report-returned':
+        return transactions.filter(tx => tx.status === 'returned');
+      case 'report-open':
+        return transactions.filter(tx => tx.status === 'active');
       default:
         return [];
     }
-  }, [view, transactions, selectedClientId, startDate, endDate, specificDate]);
+  }, [view, transactions, selectedClientId, selectedReportType, startDate, endDate, specificDate]);
 
   const totals = useMemo(() => {
     return filteredTransactions.reduce((acc, tx) => ({
@@ -135,6 +139,18 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
             <input type="date" value={specificDate} onChange={(e) => setSpecificDate(e.target.value)} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-brand-primary" />
           </div>
         );
+      case 'report-returned':
+        return (
+          <div className="p-2 py-4 text-slate-600 italic text-sm">
+            Listando todos os títulos com status <span className="font-bold text-rose-600 underline">DEVOLVIDO</span> que aguardam liquidação.
+          </div>
+        );
+      case 'report-open':
+        return (
+          <div className="p-2 py-4 text-slate-600 italic text-sm">
+            Listando todos os títulos com status <span className="font-bold text-indigo-600 underline">ATIVO</span> (em aberto na carteira).
+          </div>
+        );
       default:
         return null;
     }
@@ -156,16 +172,41 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
           <title>S.E.G - Relatório</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            body { 
+              font-family: 'Inter', sans-serif; 
+              background: white !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            @page {
+              size: A4;
+              margin: 10mm;
+            }
             @media print {
               .no-print { display: none; }
-              body { background: white; padding: 20px; }
+              body { margin: 0; padding: 0; }
+              /* Force table to fit */
+              table { width: 100% !important; table-layout: fixed !important; }
+              th, td { font-size: 8px !important; padding: 4px 2px !important; word-wrap: break-word !important; }
+              .overflow-x-auto { overflow: visible !important; }
+              /* Adjust summary cards for print */
+              .grid-cols-4 { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; }
+              .grid-cols-4 > div { flex: 1 1 22% !important; border: 1px solid #e2e8f0 !important; padding: 8px !important; }
+              .grid-cols-4 > div span { font-size: 8px !important; }
+              .grid-cols-4 > div p { font-size: 14px !important; }
+              /* Hide icons in print for space */
+              .grid-cols-4 svg { display: none !important; }
+              /* Header adjustments */
+              h1 { font-size: 18px !important; }
+              p { font-size: 10px !important; }
             }
           </style>
         </head>
-        <body class="bg-white">
-          <div class="p-8">
-            <h1 class="text-2xl font-bold mb-2">S.E.G</h1>
-            <p class="text-sm text-slate-500 mb-8">Relatório de Operações</p>
+        <body>
+          <div class="p-4">
+            <h1 class="text-2xl font-bold mb-1">S.E.G</h1>
+            <p class="text-xs text-slate-500 mb-6">Relatório de Operações Financeiras • Gerado em ${new Date().toLocaleString('pt-BR')}</p>
             ${printContent.innerHTML}
           </div>
           <script>
@@ -173,7 +214,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
               setTimeout(() => {
                 window.print();
                 window.close();
-              }, 500);
+              }, 800);
             };
           </script>
         </body>
@@ -191,7 +232,10 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
           <h1 className="text-2xl font-bold text-slate-800">
             {view === 'report-client' ? 'Relatório por Cliente' : 
              view === 'report-type' ? 'Relatório por Tipo' :
-             view === 'report-period' ? 'Relatório por Período' : 'Relatório por Data'}
+             view === 'report-period' ? 'Relatório por Período' : 
+             view === 'report-date' ? 'Relatório por Data' :
+             view === 'report-returned' ? 'Relatório de Cheques Devolvidos' :
+             'Relatório de Títulos em Aberto'}
           </h1>
           <p className="text-slate-500 text-sm">Gere análises detalhadas das movimentações financeiras.</p>
         </div>
@@ -287,9 +331,13 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold">
-                          <Building2 className="w-3 h-3" /> {banks.find(b => b.id === tx.bankId)?.name}
-                        </div>
+                        {tx.bankId ? (
+                          <div className="text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold">
+                            <Building2 className="w-3 h-3" /> {banks.find(b => b.id === tx.bankId)?.name || 'Banco Excluído'}
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-slate-400 font-bold">-</div>
+                        )}
                         <div className="font-mono text-xs text-slate-600">{tx.checkNumber}</div>
                       </td>
                       <td className="px-6 py-4 text-right font-medium">

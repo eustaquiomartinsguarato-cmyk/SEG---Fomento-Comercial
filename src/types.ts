@@ -86,5 +86,7 @@ export type View =
   | 'report-period' 
   | 'report-date' 
   | 'report-type' 
+  | 'report-returned'
+  | 'report-open'
   | 'users'
   | 'settings';

@@ -87,7 +87,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ transactions, client, banks, s
                      'Cheque'}
                   </td>
                   <td className="px-3 py-2 font-semibold text-indigo-700">{tx.issuer}</td>
-                  <td className="px-3 py-2">{bank?.name} ({bank?.code})</td>
+                  <td className="px-3 py-2">{bank ? `${bank.name} (${bank.code})` : '-'}</td>
                   <td className="px-3 py-2 font-mono text-slate-600">{tx.checkNumber}</td>
                   <td className="px-3 py-2">{new Date(tx.dueDate).toLocaleDateString('pt-BR')}</td>
                   <td className="px-3 py-2 text-right font-bold">

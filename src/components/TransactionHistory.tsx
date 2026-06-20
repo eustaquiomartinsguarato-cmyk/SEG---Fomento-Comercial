@@ -314,7 +314,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                             <span className="text-xs text-indigo-600 font-medium truncate">Emitente: {tx.issuer}</span>
                           </div>
                           <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <Building2 className="w-3 h-3" /> {bank?.name} • Ref: {tx.checkNumber} • <strong className="text-slate-700">QT.DIAS: {days}</strong>
+                            <Building2 className="w-3 h-3" /> {bank ? bank.name : '-'} • Ref: {tx.checkNumber} • <strong className="text-slate-700">QT.DIAS: {days}</strong>
                           </span>
                         </div>
                       </td>
