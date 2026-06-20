@@ -5,6 +5,7 @@
 
 export type ClientStatus = 'active' | 'blocked';
 export type TransactionStatus = 'active' | 'returned' | 'liquidated';
+export type OperationType = 'cheque' | 'promissoria' | 'nota_fiscal';
 
 export interface Client {
   id: string;
@@ -40,6 +41,7 @@ export interface Transaction {
   id: string;
   clientId: string;
   bankId: string;
+  operationType?: OperationType;
   checkNumber: string;
   grossValue: number;
   interestRate: number;
@@ -83,5 +85,6 @@ export type View =
   | 'report-client' 
   | 'report-period' 
   | 'report-date' 
+  | 'report-type' 
   | 'users'
   | 'settings';

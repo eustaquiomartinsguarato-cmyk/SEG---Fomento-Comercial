@@ -16,7 +16,7 @@ import {
   DollarSign,
   TrendingDown
 } from 'lucide-react';
-import { Client, Bank, Transaction, View } from '../types';
+import { Client, Bank, Transaction, View, OperationType } from '../types';
 
 interface ReportGeneratorProps {
   view: View;
@@ -27,6 +27,7 @@ interface ReportGeneratorProps {
 
 export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transactions, clients, banks }) => {
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedReportType, setSelectedReportType] = useState<OperationType | ''>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [specificDate, setSpecificDate] = useState(new Date().toISOString().split('T')[0]);
@@ -35,6 +36,8 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
     switch (view) {
       case 'report-client':
         return transactions.filter(tx => tx.clientId === selectedClientId);
+      case 'report-type':
+        return transactions.filter(tx => (tx.operationType || 'cheque') === selectedReportType);
       case 'report-period':
         if (!startDate || !endDate) return [];
         return transactions.filter(tx => {
@@ -93,6 +96,22 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
             >
               <option value="">Selecione um cliente...</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name} {c.code ? `[CÓD: ${c.code}]` : ''}</option>)}
+            </select>
+          </div>
+        );
+      case 'report-type':
+        return (
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase">Selecionar Tipo</label>
+            <select 
+              value={selectedReportType}
+              onChange={(e) => setSelectedReportType(e.target.value as OperationType)}
+              className="w-full md:w-80 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-brand-primary font-bold"
+            >
+              <option value="">Selecione um tipo...</option>
+              <option value="cheque">CHEQUES</option>
+              <option value="promissoria">PROMISSÓRIAS</option>
+              <option value="nota_fiscal">NOTAS FISCAIS</option>
             </select>
           </div>
         );
@@ -170,7 +189,9 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">
-            {view === 'report-client' ? 'Relatório por Cliente' : view === 'report-period' ? 'Relatório por Período' : 'Relatório por Data'}
+            {view === 'report-client' ? 'Relatório por Cliente' : 
+             view === 'report-type' ? 'Relatório por Tipo' :
+             view === 'report-period' ? 'Relatório por Período' : 'Relatório por Data'}
           </h1>
           <p className="text-slate-500 text-sm">Gere análises detalhadas das movimentações financeiras.</p>
         </div>
@@ -250,8 +271,19 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
                         <div className="font-bold text-slate-800">
                           {clients.find(c => c.id === tx.clientId)?.name}
                         </div>
-                        <div className="text-xs text-indigo-600 font-medium">
-                          Emitente: {tx.issuer}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
+                            tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
+                            tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
+                            'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
+                          }`}>
+                            {tx.operationType === 'promissoria' ? 'PROMISSÓRIA' :
+                             tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
+                             'CHEQUE'}
+                          </span>
+                          <span className="text-xs text-indigo-600 font-medium truncate">
+                            Emitente: {tx.issuer}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">

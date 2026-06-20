@@ -12,6 +12,7 @@ import {
   DollarSign,
   Percent,
   Banknote,
+  CreditCard,
   Search,
   User,
   Building,
@@ -19,7 +20,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { Client, Bank, Transaction, SystemSettings } from '../types';
+import { Client, Bank, Transaction, SystemSettings, OperationType } from '../types';
 import { generateId } from '../lib/storage';
 import { getAdjustedDueDate, calculateDaysDiff, calculateInstallmentInterest } from '../lib/calculations';
 
@@ -33,6 +34,7 @@ interface CheckoutFormProps {
 export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, settings, onConfirm }) => {
   const [clientId, setClientId] = useState('');
   const [bankId, setBankId] = useState('');
+  const [operationType, setOperationType] = useState<OperationType>('cheque');
   const [value, setValue] = useState(0);
   const [valueInput, setValueInput] = useState('');
   const [isTotalValue, setIsTotalValue] = useState(false); // Default to entry per check
@@ -114,6 +116,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
           id: generateId(),
           clientId,
           bankId,
+          operationType,
           checkNumber: txCheckNumber,
           issuer: issuer || 'Terceiro',
           grossValue: instGross,
@@ -138,6 +141,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
       // Reset form
       setClientId('');
       setBankId('');
+      setOperationType('cheque');
       setValue(0);
       setValueInput('');
       setTax(settings.defaultInterestRate);
@@ -253,7 +257,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold text-slate-800">Desconto de Cheques</h1>
+        <h1 className="text-2xl font-bold text-slate-800">Desconto</h1>
         <p className="text-slate-500 text-sm">Realize simulações e confirme novas operações financeiras.</p>
       </header>
 
@@ -310,7 +314,23 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
 
             <div className="col-span-full space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Search className="w-3 h-3" /> Emitente do Cheque (Proprietário do Cheque)
+                <CreditCard className="w-3 h-3" /> Tipo de Operação
+              </label>
+              <select 
+                required
+                value={operationType}
+                onChange={(e) => setOperationType(e.target.value as OperationType)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-brand-primary"
+              >
+                <option value="cheque">CHEQUES</option>
+                <option value="promissoria">PROMISSÓRIAS</option>
+                <option value="nota_fiscal">NOTAS FISCAIS</option>
+              </select>
+            </div>
+
+            <div className="col-span-full space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                <Search className="w-3 h-3" /> Emitente / Beneficiário (Proprietário do Título)
               </label>
               <input 
                 required
@@ -324,7 +344,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Banknote className="w-3 h-3" /> Nº do Cheque Inicial
+                <Banknote className="w-3 h-3" /> Nº do Documento Inicial
               </label>
               <input 
                 required
@@ -346,7 +366,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
                   onClick={() => setIsTotalValue(false)}
                   className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${!isTotalValue ? 'bg-white shadow-sm text-brand-primary' : 'text-slate-500'}`}
                 >
-                  Valor por Cheque
+                  Valor Unitário
                 </button>
                 <button
                   type="button"
@@ -360,7 +380,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
 
              <div className="space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <DollarSign className="w-3 h-3" /> {isTotalValue ? 'Valor Total (R$)' : 'Valor de Cada Cheque (R$)'}
+                <DollarSign className="w-3 h-3" /> {isTotalValue ? 'Valor Total (R$)' : 'Valor de Cada Título (R$)'}
               </label>
               <input 
                 required
@@ -520,7 +540,7 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
                         </span>
                         <div>
                           <p className="font-medium text-xs">Venc: {adjDate.toLocaleDateString('pt-BR')} ({days} dias)</p>
-                          <p className="text-[10px] text-slate-400 uppercase font-bold">Cheque: {txCheckNumber} • {effectiveRate.toFixed(2)}% total</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold">Ref: {txCheckNumber} • {effectiveRate.toFixed(2)}% total</p>
                         </div>
                       </div>
                       <div className="text-right">

@@ -62,14 +62,15 @@ export const Receipt: React.FC<ReceiptProps> = ({ transactions, client, banks, s
       </div>
 
       <div className="mb-8">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Lançamentos / Cheques</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Lançamentos / Detalhamento</p>
         <table className="w-full text-xs text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 border-y border-slate-100 print:bg-slate-100 print:border-slate-800">
               <th className="px-3 py-2 font-black uppercase text-[9px]">Parcela</th>
+              <th className="px-3 py-2 font-black uppercase text-[9px]">Tipo</th>
               <th className="px-3 py-2 font-black uppercase text-[9px]">Emitente</th>
               <th className="px-3 py-2 font-black uppercase text-[9px]">Banco</th>
-              <th className="px-3 py-2 font-black uppercase text-[9px]">Cheque Nº</th>
+              <th className="px-3 py-2 font-black uppercase text-[9px]">Referência</th>
               <th className="px-3 py-2 font-black uppercase text-[9px]">Vencimento</th>
               <th className="px-3 py-2 font-black uppercase text-[9px] text-right">Valor (R$)</th>
             </tr>
@@ -80,6 +81,11 @@ export const Receipt: React.FC<ReceiptProps> = ({ transactions, client, banks, s
               return (
                 <tr key={tx.id}>
                   <td className="px-3 py-2 font-bold">{i + 1} / {transactions.length}</td>
+                  <td className="px-3 py-2 uppercase font-medium text-[9px]">
+                    {tx.operationType === 'promissoria' ? 'Promissória' :
+                     tx.operationType === 'nota_fiscal' ? 'N. Fiscal' :
+                     'Cheque'}
+                  </td>
                   <td className="px-3 py-2 font-semibold text-indigo-700">{tx.issuer}</td>
                   <td className="px-3 py-2">{bank?.name} ({bank?.code})</td>
                   <td className="px-3 py-2 font-mono text-slate-600">{tx.checkNumber}</td>

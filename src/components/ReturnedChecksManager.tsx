@@ -178,10 +178,10 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <RotateCcw className="w-7 h-7 text-rose-500 animate-pulse" />
-            Cheques Devolvidos a Receber
+            Títulos Devolvidos a Receber
           </h1>
           <p className="text-slate-500 text-sm">
-            Monitore juros, multas especiais e realize acertos de cheques devolvidos com cálculo automático por dia de atraso.
+            Monitore juros, multas especiais e realize acertos de títulos devolvidos com cálculo automático por dia de atraso.
           </p>
         </div>
 
@@ -215,7 +215,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por cliente, nº do cheque ou emitente..."
+            placeholder="Buscar por cliente, nº documento ou emitente..."
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-indigo-500 transition-all font-semibold"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -230,7 +230,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
             <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-[10px] uppercase tracking-widest leading-none">
               <tr>
                 <th className="px-6 py-4">Cliente / Emitente</th>
-                <th className="px-6 py-4">Banco / Cheque</th>
+                <th className="px-6 py-4">Ref / Documento</th>
                 <th className="px-6 py-4">Data Devolução</th>
                 <th className="px-6 py-4 text-center">Dias {subView === 'pending' ? 'Unpaid' : 'Até Acerto'}</th>
                 <th className="px-6 py-4 text-right">Valor Original</th>
@@ -244,7 +244,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center text-slate-400">
-                    Nenhum cheque devolvido encontrado nos parâmetros selecionados.
+                    Nenhum título devolvido encontrado nos parâmetros selecionados.
                   </td>
                 </tr>
               ) : (
@@ -262,8 +262,17 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                     >
                       <td className="px-6 py-4">
                         <div className="font-bold text-slate-800">{client?.name || 'Cliente excluído'}</div>
-                        <div className="text-xs text-rose-600 flex items-center gap-1">
-                          Emitente: <span className="font-semibold">{tx.issuer}</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
+                            tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
+                            tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
+                            'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
+                          }`}>
+                            {tx.operationType === 'promissoria' ? 'PROMISSÓRIA' :
+                             tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
+                             'CHEQUE'}
+                          </span>
+                          <span className="text-xs text-rose-600 font-semibold truncate">Emitente: {tx.issuer}</span>
                         </div>
                         {tx.returnReason && (
                           <div className="text-[10px] text-slate-400 italic mt-0.5">
@@ -275,7 +284,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                         <div className="text-xs font-bold text-slate-600 flex items-center gap-1">
                           <Building2 className="w-3.5 h-3.5 text-slate-400" /> {bank?.name || 'Banco excluído'}
                         </div>
-                        <div className="text-[11px] font-mono text-slate-500 mt-0.5">CH nº {tx.checkNumber}</div>
+                        <div className="text-[11px] font-mono text-slate-500 mt-0.5">Ref nº {tx.checkNumber}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-slate-500 text-xs">
                         {details.returnDateStr ? new Date(details.returnDateStr + 'T12:00:00').toLocaleDateString('pt-BR') : '-'}
@@ -357,7 +366,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
               <AlertCircle className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-bold text-rose-800">Cálculo cumulativo de cheques devolvidos em aberto</p>
+              <p className="text-sm font-bold text-rose-800">Cálculo cumulativo de títulos devolvidos em aberto</p>
               <p className="text-xs text-rose-600">Total geral acumulado de juros e multas por atraso de retorno.</p>
             </div>
           </div>
@@ -380,8 +389,8 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800 font-sans tracking-tight">Efetuar Acerto de Cheque</h2>
-                  <p className="text-xs text-slate-500">Registe o pagamento do cheque devolvido pelo cliente.</p>
+                  <h2 className="text-lg font-bold text-slate-800 font-sans tracking-tight">Efetuar Acerto de Título</h2>
+                  <p className="text-xs text-slate-500">Registe o pagamento do título devolvido pelo cliente.</p>
                 </div>
               </div>
               <button 
@@ -404,7 +413,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                       <span className="font-extrabold text-slate-700">{client?.name} (Emitente: {settlingTx.issuer})</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-400">Valor Bruto Cheque:</span>
+                      <span className="text-slate-400">Valor Bruto Título:</span>
                       <span className="font-bold text-slate-700">R$ {settlingTx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between">

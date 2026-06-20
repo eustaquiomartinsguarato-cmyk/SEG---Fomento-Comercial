@@ -55,6 +55,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [editClient, setEditClient] = useState('');
   const [editBank, setEditBank] = useState('');
+  const [editOperationType, setEditOperationType] = useState<Transaction['operationType']>('cheque');
   const [editCheckNumber, setEditCheckNumber] = useState('');
   const [editIssuer, setEditIssuer] = useState('');
   const [editGrossValue, setEditGrossValue] = useState(0);
@@ -67,6 +68,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
     setEditingTx(tx);
     setEditClient(tx.clientId);
     setEditBank(tx.bankId);
+    setEditOperationType(tx.operationType || 'cheque');
     setEditCheckNumber(tx.checkNumber);
     setEditIssuer(tx.issuer);
     setEditGrossValue(tx.grossValue);
@@ -296,9 +298,20 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
                           <span className="font-bold text-slate-800">{client?.name}</span>
-                          <span className="text-xs text-indigo-600 font-medium">Emitente: {tx.issuer}</span>
-                          <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                            <Building2 className="w-3 h-3" /> {bank?.name} • CH {tx.checkNumber}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
+                              tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
+                              tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
+                              'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
+                            }`}>
+                              {tx.operationType === 'promissoria' ? 'PROMISSÓRIA' :
+                               tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
+                               'CHEQUE'}
+                            </span>
+                            <span className="text-xs text-indigo-600 font-medium truncate">Emitente: {tx.issuer}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                            <Building2 className="w-3 h-3" /> {bank?.name} • Ref: {tx.checkNumber}
                           </span>
                         </div>
                       </td>
@@ -338,7 +351,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                                   onClick={() => { onUpdateStatus(tx.id, 'liquidated'); setActiveMenuId(null); }}
                                   className="w-full h-10 px-4 text-left text-sm font-semibold text-emerald-600 hover:bg-emerald-50 flex items-center gap-2"
                                 >
-                                  <CheckCircle className="w-4 h-4" /> Liquidar Cheque
+                                  <CheckCircle className="w-4 h-4" /> Liquidar Título
                                 </button>
                                 <button 
                                   onClick={() => { setShowReturnModal(tx.id); setActiveMenuId(null); }}
@@ -458,7 +471,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-2">
                     <div className="flex justify-between"><span className="text-slate-400">Cliente:</span> <span className="font-bold text-slate-700">{client?.name}</span></div>
                     <div className="flex justify-between"><span className="text-slate-400">Emitente:</span> <span className="font-bold text-slate-700">{tx.issuer}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Nº Cheque:</span> <span className="font-bold text-slate-700">{tx.checkNumber}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Referência:</span> <span className="font-bold text-slate-700">{tx.checkNumber}</span></div>
                     <div className="flex justify-between"><span className="text-slate-400 font-medium">Valor Bruto:</span> <span className="font-black text-rose-600">R$ {tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
                   </div>
                 );
@@ -525,6 +538,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                   ...editingTx,
                   clientId: editClient,
                   bankId: editBank,
+                  operationType: editOperationType,
                   checkNumber: editCheckNumber,
                   issuer: editIssuer,
                   grossValue: Number(editGrossValue),
@@ -570,9 +584,24 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                   </select>
                 </div>
 
+                {/* OPERATION TYPE SELECT */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tipo de Operação</label>
+                  <select 
+                    required
+                    value={editOperationType}
+                    onChange={(e) => setEditOperationType(e.target.value as any)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold outline-none focus:border-brand-primary"
+                  >
+                    <option value="cheque">CHEQUE</option>
+                    <option value="promissoria">PROMISSÓRIA</option>
+                    <option value="nota_fiscal">NOTA FISCAL</option>
+                  </select>
+                </div>
+
                 {/* EMITENTE */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Emitente do Cheque</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Emitente / Beneficiário</label>
                   <input 
                     type="text" 
                     required
@@ -584,7 +613,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
 
                 {/* CHECK NUMBER */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nº Cheque</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nº Documento / Ref</label>
                   <input 
                     type="text" 
                     required

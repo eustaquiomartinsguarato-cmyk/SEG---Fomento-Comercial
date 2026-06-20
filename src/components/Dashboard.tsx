@@ -18,9 +18,11 @@ import { motion } from 'motion/react';
 interface DashboardProps {
   clients: Client[];
   transactions: Transaction[];
+  role: string | undefined;
+  onNavigate: (view: any) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, role, onNavigate }) => {
   const activeClients = clients.filter(c => c.status === 'active').length;
   const blockedClients = clients.filter(c => c.status === 'blocked').length;
   const openValue = transactions
@@ -38,7 +40,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions }) =
   const stats = [
     { label: 'Clientes Ativos', value: activeClients, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Valor em Aberto', value: `R$ ${openValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Cheques Devolvidos', value: returnedCount, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Títulos Devolvidos', value: returnedCount, icon: AlertCircle, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'Clientes Bloqueados', value: blockedClients, icon: Lock, color: 'text-rose-600', bg: 'bg-rose-50' },
   ];
 
@@ -133,16 +135,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions }) =
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-6">
           <h2 className="font-bold text-slate-800">Ações Rápidas</h2>
           <div className="grid grid-cols-1 gap-3">
-            <button className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-brand-primary hover:bg-indigo-50 transition-all group text-left">
+            <button 
+              onClick={() => onNavigate('discount')}
+              className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-brand-primary hover:bg-indigo-50 transition-all group text-left w-full"
+            >
               <div className="p-2 bg-emerald-50 rounded-lg group-hover:bg-emerald-100">
                 <ArrowUpRight className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-700">Novo Desconto</p>
-                <p className="text-[10px] text-slate-500 italic">Cheque ou parcelado</p>
+                <p className="text-[10px] text-slate-500 italic">Cheque, Promissória ou NF</p>
               </div>
             </button>
-            <button className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-brand-primary hover:bg-indigo-50 transition-all group text-left">
+            <button 
+              onClick={() => onNavigate('clients')}
+              className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-brand-primary hover:bg-indigo-50 transition-all group text-left w-full"
+            >
               <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
@@ -151,15 +159,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions }) =
                 <p className="text-[10px] text-slate-500 italic">Novo limite de crédito</p>
               </div>
             </button>
-            <button className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-brand-primary hover:bg-indigo-50 transition-all group text-left">
-              <div className="p-2 bg-rose-50 rounded-lg group-hover:bg-rose-100">
-                <ArrowDownRight className="w-5 h-5 text-rose-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-700">Nova Devolução</p>
-                <p className="text-[10px] text-slate-500 italic">Registro de retorno</p>
-              </div>
-            </button>
+            {role === 'admin' && (
+              <button 
+                onClick={() => onNavigate('returned')}
+                className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-brand-primary hover:bg-indigo-50 transition-all group text-left w-full"
+              >
+                <div className="p-2 bg-rose-50 rounded-lg group-hover:bg-rose-100">
+                  <ArrowDownRight className="w-5 h-5 text-rose-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Nova Devolução</p>
+                  <p className="text-[10px] text-slate-500 italic">Registro de retorno</p>
+                </div>
+              </button>
+            )}
           </div>
 
           <div className="pt-4 border-t border-slate-100">
