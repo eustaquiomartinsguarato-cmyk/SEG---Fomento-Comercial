@@ -301,36 +301,68 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
               </div>
             </div>
 
-            <div className="col-span-full space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                <Building className="w-3 h-3" /> Selecionar Banco {operationType !== 'cheque' && <span className="text-[10px] lowercase text-slate-400 font-normal">(opcional)</span>}
-              </label>
-              <select 
-                required={operationType === 'cheque'}
-                value={bankId}
-                onChange={(e) => setBankId(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-brand-primary"
-              >
-                <option value="">Selecione o banco...</option>
-                {banks.map(b => (
-                  <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="col-span-full space-y-2">
+            <div className="col-span-full space-y-3">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                 <CreditCard className="w-3 h-3" /> Tipo de Operação
               </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {[
+                  { id: 'cheque', label: 'Cheques', desc: 'Cheque recebido' },
+                  { id: 'promissoria', label: 'Promissórias', desc: 'Nota promissória' },
+                  { id: 'nota_fiscal', label: 'Notas Fiscais', desc: 'Nota fiscal' }
+                ].map((opt) => {
+                  const isChecked = operationType === opt.id;
+                  return (
+                    <label 
+                      key={opt.id} 
+                      className={`flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
+                        isChecked 
+                          ? 'border-indigo-600 bg-indigo-50/50 text-indigo-900 shadow-sm' 
+                          : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          setOperationType(opt.id as any);
+                          if (opt.id !== 'cheque') {
+                            setBankId('');
+                          }
+                        }}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                      />
+                      <div className="flex flex-col">
+                        <span className="font-bold text-xs uppercase tracking-wide">{opt.label}</span>
+                        <span className="text-[10px] text-slate-500 font-normal">{opt.desc}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="col-span-full space-y-2">
+              <label className={`text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${
+                operationType !== 'cheque' ? 'text-slate-400' : 'text-slate-500'
+              }`}>
+                <Building className="w-3 h-3" /> Selecionar Banco {operationType !== 'cheque' && <span className="text-[10px] lowercase text-slate-400 font-normal">(não aplicável)</span>}
+              </label>
               <select 
-                required
-                value={operationType}
-                onChange={(e) => setOperationType(e.target.value as OperationType)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-brand-primary"
+                required={operationType === 'cheque'}
+                disabled={operationType !== 'cheque'}
+                value={bankId}
+                onChange={(e) => setBankId(e.target.value)}
+                className={`w-full px-4 py-3 border rounded-xl text-sm outline-none transition-all ${
+                  operationType !== 'cheque'
+                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 focus:border-brand-primary'
+                }`}
               >
-                <option value="cheque">CHEQUES</option>
-                <option value="promissoria">PROMISSÓRIAS</option>
-                <option value="nota_fiscal">NOTAS FISCAIS</option>
+                <option value="">{operationType !== 'cheque' ? 'Não aplicável para este tipo' : 'Selecione o banco...'}</option>
+                {operationType === 'cheque' && banks.map(b => (
+                  <option key={b.id} value={b.id}>{b.name} ({b.code})</option>
+                ))}
               </select>
             </div>
 
