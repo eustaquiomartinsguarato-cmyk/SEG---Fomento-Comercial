@@ -48,6 +48,15 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
   const [returnReason, setReturnReason] = useState('');
   const [sortBy, setSortBy] = useState<'checkNumber_asc' | 'checkNumber_desc' | 'createdAt_desc' | 'createdAt_asc'>('checkNumber_asc');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, sortBy]);
+
   // Deletion state
   const [deletingTxId, setDeletingTxId] = useState<string | null>(null);
 
@@ -115,6 +124,9 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
     // Default: 'createdAt_desc'
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedTransactions = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleExportCSV = () => {
     const headers = ['ID', 'Cliente', 'Emitente', 'Banco', 'Cheque', 'Valor Bruto', 'Valor Líquido', 'Status', 'Vencimento'];
@@ -280,7 +292,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                   </td>
                 </tr>
               ) : (
-                filtered.map((tx, index) => {
+                paginatedTransactions.map((tx, index) => {
                   const client = clients.find(c => c.id === tx.clientId);
                   const bank = banks.find(b => b.id === tx.bankId);
                   const taxValue = tx.grossValue - tx.netValue;
@@ -305,7 +317,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                             <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
                               tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
                               tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
-                              'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
+                              'bg-rose-50 text-rose-600 ring-rose-500/20'
                             }`}>
                               {tx.operationType === 'promissoria' ? 'PROMISSÓRIA' :
                                tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
@@ -395,6 +407,104 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="relative ml-3 inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Próximo
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs text-slate-500">
+                  Mostrando <span className="font-bold text-slate-800">{Math.min(filtered.length, (currentPage - 1) * itemsPerPage + 1)}</span> a{' '}
+                  <span className="font-bold text-slate-800">{Math.min(filtered.length, currentPage * itemsPerPage)}</span> de{' '}
+                  <span className="font-bold text-slate-800">{filtered.length}</span> transações
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-xl gap-1" aria-label="Pagination">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center rounded-lg px-2 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Primeira Página"
+                  >
+                    &laquo;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center rounded-lg px-2 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Anterior"
+                  >
+                    Anterior
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => Math.abs(page - currentPage) <= 1 || page === 1 || page === totalPages)
+                    .map((page, idx, arr) => {
+                      const showEllipsisBefore = idx > 0 && page - arr[idx - 1] > 1;
+                      return (
+                        <React.Fragment key={page}>
+                          {showEllipsisBefore && (
+                            <span className="relative inline-flex items-center px-1.5 py-1 text-xs font-semibold text-slate-400">
+                              ...
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setCurrentPage(page)}
+                            aria-current={currentPage === page ? 'page' : undefined}
+                            className={`relative inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                              currentPage === page
+                                ? 'z-10 bg-indigo-600 text-white shadow-sm shadow-indigo-100'
+                                : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center rounded-lg px-2 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Próxima"
+                  >
+                    Próximo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center rounded-lg px-2 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Última Página"
+                  >
+                    &raquo;
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {showReturnModal && (
