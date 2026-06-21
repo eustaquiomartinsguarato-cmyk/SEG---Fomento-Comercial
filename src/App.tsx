@@ -100,7 +100,26 @@ export default function App() {
     }, 'createdAt');
     
     const unsubUsers = subscribeToCollection<AppUser>('users', (data) => {
-      setUsers(data);
+      const adminExists = data.some(u => u.username.toLowerCase() === 'admin');
+      const samuelExists = data.some(u => u.username.toLowerCase() === 'samuel');
+      const merged = [...data];
+      if (!adminExists) {
+        merged.unshift({
+          id: 'user-admin',
+          username: 'admin',
+          name: 'Administrador',
+          role: 'admin'
+        });
+      }
+      if (!samuelExists) {
+        merged.push({
+          id: 'user-samuel',
+          username: 'samuel',
+          name: 'Samuel',
+          role: 'operator'
+        });
+      }
+      setUsers(merged);
       checkLoaded();
     }, 'createdAt');
     
