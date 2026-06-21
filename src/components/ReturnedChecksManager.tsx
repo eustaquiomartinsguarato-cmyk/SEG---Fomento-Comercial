@@ -79,13 +79,21 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
   // Calculate return metadata for a transaction
   const getReturnDetails = (tx: Transaction, customEndDateStr?: string) => {
     const returnDateStr = tx.returnedAt || tx.dueDate;
-    const returnDate = new Date(returnDateStr + 'T12:00:00');
+    
+    // Safely extract YYYY-MM-DD from returnedAt or dueDate (may be full ISO timestamp with 'T' or a standard date string)
+    const returnDateBase = returnDateStr.includes('T') ? returnDateStr.split('T')[0] : returnDateStr;
+    const returnDate = new Date(returnDateBase + 'T12:00:00');
     
     let endDate = new Date();
     if (customEndDateStr) {
-      endDate = new Date(customEndDateStr + 'T12:00:00');
+      const customEndDateBase = customEndDateStr.includes('T') ? customEndDateStr.split('T')[0] : customEndDateStr;
+      endDate = new Date(customEndDateBase + 'T12:00:00');
     } else if (tx.status === 'liquidated' && tx.resolvedAt) {
-      endDate = new Date(tx.resolvedAt + 'T12:00:00');
+      const resolvedAtBase = tx.resolvedAt.includes('T') ? tx.resolvedAt.split('T')[0] : tx.resolvedAt;
+      endDate = new Date(resolvedAtBase + 'T12:00:00');
+    } else {
+      // Set to 12:00:00 to match the timezone/hour of returnDate
+      endDate.setHours(12, 0, 0, 0);
     }
 
     const days = calculateDaysDiff(returnDate, endDate);
@@ -232,7 +240,7 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                 <th className="px-6 py-4">Cliente / Emitente</th>
                 <th className="px-6 py-4">Ref / Documento</th>
                 <th className="px-6 py-4">Data Devolução</th>
-                <th className="px-6 py-4 text-center">Dias {subView === 'pending' ? 'Unpaid' : 'Até Acerto'}</th>
+                <th className="px-6 py-4 text-center">Dias {subView === 'pending' ? 'Atrasados' : 'Até Acerto'}</th>
                 <th className="px-6 py-4 text-right">Valor Original</th>
                 <th className="px-6 py-4 text-right">Taxa / Multa</th>
                 <th className="px-6 py-4 text-right text-indigo-600">Total Acumulado</th>
