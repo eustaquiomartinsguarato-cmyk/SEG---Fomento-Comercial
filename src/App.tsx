@@ -24,7 +24,7 @@ import {
 } from './types';
 import { db, saveItem, deleteItem, subscribeToCollection, auth, loginAnonymously } from './lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
-import { Settings, Info, CreditCard, LogOut, ExternalLink, AlertCircle } from 'lucide-react';
+import { Settings, Info, CreditCard, LogOut, ExternalLink, AlertCircle, Menu } from 'lucide-react';
 import { UserManager } from './components/UserManager';
 import { GlobalLoader } from './components/GlobalLoader';
 
@@ -49,6 +49,7 @@ export default function App() {
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const triggerLoader = () => {
     setShowOverlay(true);
@@ -523,8 +524,26 @@ export default function App() {
   const returnedCount = transactions.filter(t => t.status === 'returned').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex print:bg-white">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row print:bg-white">
       <GlobalLoader isVisible={showOverlay} />
+      
+      {/* Mobile Top Header */}
+      <header className="md:hidden flex items-center justify-between px-6 py-4 bg-brand-dark text-white shadow-md z-30 sticky top-0 print:hidden">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center font-bold text-lg shadow-md">
+            S
+          </div>
+          <span className="text-lg font-bold tracking-tight">S.E.G</span>
+        </div>
+        <button
+          onClick={() => setIsMobileSidebarOpen(true)}
+          className="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+          title="Abrir menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+      </header>
+
       <Sidebar 
         activeView={activeView} 
         onViewChange={setActiveView} 
@@ -535,9 +554,11 @@ export default function App() {
         notificationsCount={unreadNotificationsCount}
         onClearNotifications={handleClearNotifications}
         showLoader={triggerLoader}
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={() => setIsMobileSidebarOpen(false)}
       />
       
-      <main className="ml-64 p-10 print:ml-0 print:p-0 relative flex-1">
+      <main className="md:ml-64 p-4 md:p-10 print:ml-0 print:p-0 relative flex-1 min-w-0">
         {loading && (
           <div className="fixed top-6 right-8 z-[100] flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-2xl shadow-indigo-200 animate-pulse border border-indigo-400">
             <span className="w-2 h-2 bg-white rounded-full animate-ping" />
