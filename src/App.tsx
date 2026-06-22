@@ -558,7 +558,7 @@ export default function App() {
         onMobileClose={() => setIsMobileSidebarOpen(false)}
       />
       
-      <main className="md:ml-64 p-4 md:p-10 print:ml-0 print:p-0 relative flex-1 min-w-0">
+      <main className="md:ml-72 p-4 md:p-10 print:ml-0 print:p-0 relative flex-1 min-w-0">
         {loading && (
           <div className="fixed top-6 right-8 z-[100] flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest shadow-2xl shadow-indigo-200 animate-pulse border border-indigo-400">
             <span className="w-2 h-2 bg-white rounded-full animate-ping" />

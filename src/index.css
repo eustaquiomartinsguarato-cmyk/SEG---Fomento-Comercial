@@ -47,3 +47,40 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* Sidebar responsiveness adjustments for short screen heights */
+@media (max-height: 780px) {
+  .sidebar-item {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+  .sidebar-divider {
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.15rem !important;
+  }
+  .sidebar-footer {
+    padding: 0.75rem !important;
+  }
+  .sidebar-footer-profile {
+    margin-bottom: 0.5rem !important;
+  }
+}
+
+@media (max-height: 640px) {
+  .sidebar-item {
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+    gap: 0.5rem !important;
+  }
+  .sidebar-divider {
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.1rem !important;
+  }
+  .sidebar-footer {
+    padding: 0.5rem !important;
+  }
+  .sidebar-footer-profile {
+    margin-bottom: 0.35rem !important;
+  }
+}
+

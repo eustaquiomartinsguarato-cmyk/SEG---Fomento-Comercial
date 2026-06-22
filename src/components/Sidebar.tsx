@@ -85,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </AnimatePresence>
 
-      <aside className={`fixed left-0 top-0 h-screen w-64 bg-brand-dark text-white flex flex-col shadow-xl z-50 print:hidden transition-transform duration-300 ease-out md:translate-x-0 ${
+      <aside className={`fixed left-0 top-0 h-screen w-72 bg-brand-dark text-white flex flex-col shadow-xl z-50 print:hidden transition-transform duration-300 ease-out md:translate-x-0 ${
         isMobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="p-6 flex items-center justify-between gap-3">
@@ -124,12 +124,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-3 py-2 custom-scrollbar">
           <ul className="space-y-1">
             {menuItems.map((item, index) => {
               if (item.type === 'divider') {
                 return (
-                  <li key={`divider-${index}`} className="px-3 pt-4 pb-2">
+                  <li key={`divider-${index}`} className="px-3 pt-4 pb-2 sidebar-divider">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                       {item.label}
                     </span>
@@ -148,23 +148,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onViewChange(item.id as View);
                       onMobileClose?.();
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
+                    className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group sidebar-item ${
                       isActive 
                         ? 'bg-brand-primary text-white shadow-md' 
                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-brand-primary transition-colors'}`} />
+                    <Icon className={`w-5 h-5 mt-0.5 shrink-0 ${isActive ? 'text-white' : 'group-hover:text-brand-primary transition-colors'}`} />
                     <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
                     {item.id === 'returned' && returnedCount > 0 && (
-                      <div className="relative flex items-center justify-center mr-1">
+                      <div className="relative flex items-center justify-center mr-1 shrink-0 self-center">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-600 text-[10px] font-black text-white">
                           {returnedCount}
                         </span>
                       </div>
                     )}
-                    {isActive && <ChevronRight className="w-4 h-4 opacity-70" />}
+                    {isActive && <ChevronRight className="w-4 h-4 opacity-70 shrink-0 self-center" />}
                   </button>
                 </li>
               );
@@ -172,9 +172,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 px-2 mb-4">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold ring-2 ring-brand-primary/20">
+        <div className="p-4 border-t border-white/10 sidebar-footer">
+          <div className="flex items-center gap-3 px-2 mb-4 sidebar-footer-profile">
+            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold ring-2 ring-brand-primary/20 shrink-0 animate-pulse">
               {authName?.[0] || 'U'}
             </div>
             <div className="flex-1 min-w-0">
@@ -189,7 +189,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:text-white hover:bg-rose-500/10 transition-all group"
           >
-            <LogOut className="w-4 h-4 group-hover:text-rose-400" />
+            <LogOut className="w-4 h-4 group-hover:text-rose-400 shrink-0" />
             <span className="text-xs font-bold uppercase tracking-widest">Sair do Sistema</span>
           </button>
         </div>
