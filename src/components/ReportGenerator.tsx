@@ -181,32 +181,66 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
             }
             @page {
               size: A4;
-              margin: 10mm;
+              margin: 8mm;
             }
             @media print {
               .no-print { display: none; }
               body { margin: 0; padding: 0; }
-              /* Force table to fit */
-              table { width: 100% !important; table-layout: fixed !important; }
-              th, td { font-size: 8px !important; padding: 4px 2px !important; word-wrap: break-word !important; }
+              header { margin-bottom: 10px !important; padding-bottom: 5px !important; border-bottom: 1px solid #e2e8f0 !important; }
+              h1 { font-size: 16px !important; margin: 0 !important; }
+              .header-info { display: flex !important; justify-content: space-between !important; align-items: baseline !important; }
+              .header-info p { font-size: 9px !important; margin: 0 !important; }
+              
+              /* Force table to fit and avoid overlap */
+              table { width: 100% !important; border-collapse: collapse !important; }
+              th, td { 
+                font-size: 7.5px !important; 
+                padding: 4px 2px !important; 
+                word-wrap: break-word !important; 
+                line-height: 1.2 !important;
+                vertical-align: top !important;
+              }
               .overflow-x-auto { overflow: visible !important; }
-              /* Adjust summary cards for print */
-              .grid-cols-4 { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; }
-              .grid-cols-4 > div { flex: 1 1 22% !important; border: 1px solid #e2e8f0 !important; padding: 8px !important; }
-              .grid-cols-4 > div span { font-size: 8px !important; }
-              .grid-cols-4 > div p { font-size: 14px !important; }
-              /* Hide icons in print for space */
-              .grid-cols-4 svg { display: none !important; }
-              /* Header adjustments */
-              h1 { font-size: 18px !important; }
-              p { font-size: 10px !important; }
+
+              /* Define column widths for consistency */
+              th:nth-child(1), td:nth-child(1) { width: 12% !important; } /* Data */
+              th:nth-child(2), td:nth-child(2) { width: 35% !important; } /* Operação */
+              th:nth-child(3), td:nth-child(3) { width: 23% !important; } /* Banco */
+              th:nth-child(4), td:nth-child(4) { width: 10% !important; } /* Bruto */
+              th:nth-child(5), td:nth-child(5) { width: 10% !important; } /* Líquido */
+              th:nth-child(6), td:nth-child(6) { width: 10% !important; } /* Status */
+              
+              /* Compact summary cards for print */
+              .summary-grid { 
+                display: grid !important; 
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important; 
+                margin-bottom: 10px !important;
+              }
+              .summary-group {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 5px !important;
+              }
+              .summary-card { 
+                padding: 6px !important; 
+                border: 1px solid #e2e8f0 !important;
+                background-color: #f8fafc !important;
+              }
+              .summary-card span { font-size: 7px !important; line-height: 1 !important; color: #64748b !important; }
+              .summary-card p { font-size: 11px !important; margin-top: 2px !important; font-weight: 800 !important; }
+              
+              /* Hide icons and unnecessary elements in print */
+              svg, .rounded-lg, .print\:hidden { display: none !important; }
             }
           </style>
         </head>
         <body>
-          <div class="p-4">
-            <h1 class="text-2xl font-bold mb-1">S.E.G</h1>
-            <p class="text-xs text-slate-500 mb-6">Relatório de Operações Financeiras • Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+          <div class="p-2">
+            <header class="header-info pb-2 mb-2 border-b">
+              <h1 class="font-bold">S.E.G - GESTÃO FINANCEIRA</h1>
+              <p class="text-slate-500 uppercase tracking-tighter font-semibold">Relatório • Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+            </header>
             ${printContent.innerHTML}
           </div>
           <script>
@@ -226,10 +260,10 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
   };
 
   return (
-    <div className="space-y-8" id="report-content-to-print">
-      <header className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-8" id="report-content-to-print">
+      <header className="flex items-center justify-between print:mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">
+          <h1 className="text-xl md:text-2xl font-bold text-slate-800 print:text-base">
             {view === 'report-client' ? 'Relatório por Cliente' : 
              view === 'report-type' ? 'Relatório por Tipo' :
              view === 'report-period' ? 'Relatório por Período' : 
@@ -237,7 +271,7 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
              view === 'report-returned' ? 'Relatório de Cheques Devolvidos' :
              'Relatório de Títulos em Aberto'}
           </h1>
-          <p className="text-slate-500 text-sm">Gere análises detalhadas das movimentações financeiras.</p>
+          <p className="text-slate-500 text-xs md:text-sm print:hidden">Gere análises detalhadas das movimentações financeiras.</p>
         </div>
         <div className="flex gap-2 print:hidden">
           <button 
@@ -262,28 +296,61 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
 
       {filteredTransactions.length > 0 && (
         <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[
-              { label: 'Bruto Total', value: totals.gross, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50' },
-              { label: 'Líquido Pago', value: totals.net, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-              { label: 'Receita (Taxas)', value: totals.tax, icon: TrendingDown, color: 'text-rose-600', bg: 'bg-rose-50' },
-              { label: 'Operações', value: totals.count, icon: FileText, color: 'text-slate-600', bg: 'bg-slate-50' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`p-2 rounded-lg ${stat.bg}`}>
-                    <stat.icon className={`w-4 h-4 ${stat.color}`} />
+          {/* Summary Cards - Grouped in Pairs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:gap-2 summary-grid">
+            {/* Group 1: Bruto and Líquido */}
+            <div className="grid grid-cols-2 gap-2 md:gap-4 summary-group">
+              <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-100 shadow-sm print:rounded-none summary-card">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                  <div className="p-2 rounded-lg bg-blue-50 print:hidden">
+                    <DollarSign className="w-4 h-4 text-blue-600" />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bruto Total</span>
                 </div>
-                <p className="text-xl font-bold text-slate-800">
-                  {typeof stat.value === 'number' && stat.label !== 'Operações' 
-                    ? `R$ ${stat.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
-                    : stat.value}
+                <p className="text-base md:text-xl font-bold text-slate-800">
+                  R$ {totals.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
-            ))}
+
+              <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-100 shadow-sm print:rounded-none summary-card">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                  <div className="p-2 rounded-lg bg-emerald-50 print:hidden">
+                    <TrendingUp className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Líquido Pago</span>
+                </div>
+                <p className="text-base md:text-xl font-bold text-emerald-600">
+                  R$ {totals.net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+
+            {/* Group 2: Receita and Operações */}
+            <div className="grid grid-cols-2 gap-2 md:gap-4 summary-group">
+              <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-100 shadow-sm print:rounded-none summary-card">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                  <div className="p-2 rounded-lg bg-amber-50 print:hidden">
+                    <TrendingDown className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Receita</span>
+                </div>
+                <p className="text-base md:text-xl font-bold text-amber-600">
+                  R$ {totals.tax.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+
+              <div className="bg-white p-4 md:p-5 rounded-xl border border-slate-100 shadow-sm print:rounded-none summary-card">
+                <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                  <div className="p-2 rounded-lg bg-slate-50 print:hidden">
+                    <FileText className="w-4 h-4 text-slate-600" />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Operações</span>
+                </div>
+                <p className="text-base md:text-xl font-bold text-slate-800">
+                  {totals.count}
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Table */}
@@ -304,19 +371,25 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
                   {filteredTransactions.map((tx, index) => (
                     <tr 
                       key={tx.id} 
-                      className={`transition-colors ${
+                      className={`transition-colors border-b border-slate-50 print:border-slate-200 ${
                         index % 2 === 0 ? 'bg-white' : 'bg-zebra-table'
                       }`}
                     >
-                      <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
+                      <td className="px-6 py-4 text-slate-500">
                         {new Date(tx.createdAt).toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-800">
+                        <div className="font-bold text-slate-800 text-[11px] uppercase truncate max-w-[200px] print:max-w-none print:whitespace-normal">
                           {clients.find(c => c.id === tx.clientId)?.name}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
+                        {tx.issuer && (
+                          <div className="text-[10px] text-slate-600 mt-0.5 font-bold uppercase overflow-visible print:text-[8px]">
+                            <span className="text-slate-400 font-extrabold text-[8px] mr-1 print:text-[7px]">EMIT:</span>
+                            {tx.issuer}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase ring-1 ring-inset ${
                             tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
                             tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
                             'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
@@ -325,20 +398,17 @@ export const ReportGenerator: React.FC<ReportGeneratorProps> = ({ view, transact
                              tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
                              'CHEQUE'}
                           </span>
-                          <span className="text-xs text-indigo-600 font-medium truncate">
-                            Emitente: {tx.issuer}
-                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         {tx.bankId ? (
-                          <div className="text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold">
-                            <Building2 className="w-3 h-3" /> {banks.find(b => b.id === tx.bankId)?.name || 'Banco Excluído'}
+                          <div className="text-[10px] text-slate-500 flex items-center gap-1 uppercase font-bold print:text-[8px] print:leading-tight">
+                            <Building2 className="w-3 h-3 print:hidden" /> {banks.find(b => b.id === tx.bankId)?.name || 'Banco Excluído'}
                           </div>
                         ) : (
-                          <div className="text-[10px] text-slate-400 font-bold">-</div>
+                          <div className="text-[10px] text-slate-400 font-bold print:text-[8px]">-</div>
                         )}
-                        <div className="font-mono text-xs text-slate-600">{tx.checkNumber}</div>
+                        <div className="font-mono text-xs text-slate-600 mt-1 print:text-[9px]">{tx.checkNumber}</div>
                       </td>
                       <td className="px-6 py-4 text-right font-medium">
                         {tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}

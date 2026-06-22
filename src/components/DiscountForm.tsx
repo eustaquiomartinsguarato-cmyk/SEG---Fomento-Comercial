@@ -91,7 +91,9 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const isBankRequired = operationType === 'cheque';
-    if (!clientId || (isBankRequired && !bankId) || !value || !dueDate) return;
+    const client = clients.find(c => c.id === clientId);
+    
+    if (!clientId || client?.status === 'blocked' || (isBankRequired && !bankId) || !value || !dueDate) return;
 
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -288,8 +290,9 @@ export const DiscountForm: React.FC<CheckoutFormProps> = ({ clients, banks, sett
                     <option 
                       key={c.id} 
                       value={c.id} 
-                      className={c.status === 'blocked' ? 'text-rose-600 font-medium' : ''}
-                      style={c.status === 'blocked' ? { color: '#e11d48' } : {}}
+                      disabled={c.status === 'blocked'}
+                      className={c.status === 'blocked' ? 'text-slate-400 bg-slate-50' : ''}
+                      style={c.status === 'blocked' ? { color: '#94a3b8', cursor: 'not-allowed' } : {}}
                     >
                       {c.name} {c.code ? `[CÓD: ${c.code}]` : ''} {c.status === 'blocked' ? '— (BLOQUEADO)' : ''}
                     </option>

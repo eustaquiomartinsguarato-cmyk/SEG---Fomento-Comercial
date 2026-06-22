@@ -19,15 +19,18 @@ import {
   Trash2,
   Edit,
   AlertTriangle,
-  X
+  X,
+  MessageCircle,
+  MessageSquare
 } from 'lucide-react';
-import { Client, Bank, Transaction, TransactionStatus } from '../types';
+import { Client, Bank, Transaction, TransactionStatus, SystemSettings } from '../types';
 import { calculateDaysDiff, calculateInstallmentInterest } from '../lib/calculations';
 
 interface HistoryManagerProps {
   transactions: Transaction[];
   clients: Client[];
   banks: Bank[];
+  settings: SystemSettings;
   onUpdateStatus: (txId: string, status: TransactionStatus, reason?: string) => void;
   onDeleteTransaction?: (id: string) => void;
   onEditTransaction?: (tx: Transaction) => void;
@@ -37,7 +40,8 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
   transactions, 
   clients, 
   banks, 
-  onUpdateStatus,
+  settings,
+  onUpdateStatus, 
   onDeleteTransaction,
   onEditTransaction
 }) => {
@@ -67,6 +71,33 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
   const [editOperationType, setEditOperationType] = useState<Transaction['operationType']>('cheque');
   const [editCheckNumber, setEditCheckNumber] = useState('');
   const [editIssuer, setEditIssuer] = useState('');
+
+  const handleNotifyClient = (tx: Transaction) => {
+    const client = clients.find(c => c.id === tx.clientId);
+    if (!client) return;
+
+    const value = tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const message = `Olá *${client.name}*, informamos que o cheque nº *${tx.checkNumber}* (Emitente: ${tx.issuer}) no valor de *R$ ${value}* foi devolvido em nosso sistema. Favor entrar em contato para regularização. Att: *${settings.companyName || 'Financeiro'}*`;
+    
+    // Clean phone number (keep only digits)
+    const phone = client.phone.replace(/\D/g, '');
+    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(url, '_blank');
+  };
+
+  const handleNotifySMS = (tx: Transaction) => {
+    const client = clients.find(c => c.id === tx.clientId);
+    if (!client) return;
+
+    const value = tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const message = `Olá ${client.name}, informamos que o cheque nº ${tx.checkNumber} (Emitente: ${tx.issuer}) no valor de R$ ${value} foi devolvido em nosso sistema. Favor entrar em contato para regularização. Att: ${settings.companyName || 'Financeiro'}`;
+    
+    const phone = client.phone.replace(/\D/g, '');
+    const url = `sms:+55${phone}?body=${encodeURIComponent(message)}`;
+    
+    window.location.href = url;
+  };
   const [editGrossValue, setEditGrossValue] = useState(0);
   const [editInterestRate, setEditInterestRate] = useState(0);
   const [editIssueDate, setEditIssueDate] = useState('');
@@ -312,9 +343,15 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-800">{client?.name}</span>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
+                          <span className="font-bold text-slate-800 text-xs uppercase">{client?.name}</span>
+                          {tx.issuer && (
+                            <div className="text-[10px] text-slate-600 mt-0.5 font-bold uppercase">
+                              <span className="text-slate-400 font-extrabold text-[8px] mr-1">EMIT:</span>
+                              {tx.issuer}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase ring-1 ring-inset ${
                               tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
                               tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
                               'bg-rose-50 text-rose-600 ring-rose-500/20'
@@ -323,10 +360,9 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                                tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
                                'CHEQUE'}
                             </span>
-                            <span className="text-xs text-indigo-600 font-medium truncate">Emitente: {tx.issuer}</span>
                           </div>
-                          <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <Building2 className="w-3 h-3" /> {bank ? bank.name : '-'} • Ref: {tx.checkNumber} • <strong className="text-slate-700">QT.DIAS: {days}</strong>
+                          <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-1 border-t border-slate-50 pt-1">
+                            <Building2 className="w-3 h-3 text-slate-400" /> {bank ? bank.name : '-'} • Ref: {tx.checkNumber} • <strong className="text-slate-700">DIAS: {days}</strong>
                           </span>
                         </div>
                       </td>
@@ -377,12 +413,30 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
                               </>
                             )}
                             {tx.status !== 'active' && (
-                              <button 
-                                onClick={() => { onUpdateStatus(tx.id, 'active'); setActiveMenuId(null); }}
-                                className="w-full h-10 px-4 text-left text-sm font-semibold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
-                              >
-                                <ArrowUpRight className="w-4 h-4" /> Reativar Operação
-                              </button>
+                              <>
+                                {tx.status === 'returned' && (
+                                  <>
+                                    <button 
+                                      onClick={() => { handleNotifyClient(tx); setActiveMenuId(null); }}
+                                      className="w-full h-10 px-4 text-left text-sm font-semibold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
+                                    >
+                                      <MessageCircle className="w-4 h-4" /> Notificar via WhatsApp
+                                    </button>
+                                    <button 
+                                      onClick={() => { handleNotifySMS(tx); setActiveMenuId(null); }}
+                                      className="w-full h-10 px-4 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50 flex items-center gap-2"
+                                    >
+                                      <MessageSquare className="w-4 h-4" /> Notificar via SMS (Manual)
+                                    </button>
+                                  </>
+                                )}
+                                <button 
+                                  onClick={() => { onUpdateStatus(tx.id, 'active'); setActiveMenuId(null); }}
+                                  className="w-full h-10 px-4 text-left text-sm font-semibold text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
+                                >
+                                  <ArrowUpRight className="w-4 h-4" /> Reativar Operação
+                                </button>
+                              </>
                             )}
                             <div className="border-t border-slate-100 my-1" />
                             <button 

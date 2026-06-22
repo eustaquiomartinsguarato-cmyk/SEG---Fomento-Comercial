@@ -90,3 +90,16 @@ export type View =
   | 'report-open'
   | 'users'
   | 'settings';
+
+export interface SystemNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  read: boolean;
+  createdAt: string;
+  metadata?: {
+    transactionId?: string;
+    clientId?: string;
+  };
+}

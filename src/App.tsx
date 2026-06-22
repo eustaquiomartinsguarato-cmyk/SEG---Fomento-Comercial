@@ -36,6 +36,7 @@ export default function App() {
   const [clients, setClients] = useState<Client[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [notifications, setNotifications] = useState<import('./types').SystemNotification[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
   const [settings, setSettings] = useState<SystemSettings>({
     companyName: 'S.E.G',
@@ -76,12 +77,17 @@ export default function App() {
 
     setLoading(true);
     let loadedCount = 0;
-    const totalToLoad = 5;
+    const totalToLoad = 6;
 
     const checkLoaded = () => {
       loadedCount++;
       if (loadedCount >= totalToLoad) setLoading(false);
     };
+
+    // Solicitar permissão de notificação do navegador
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
 
     // Subscriptions with progress tracking
     const unsubClients = subscribeToCollection<Client>('clients', (data) => {
@@ -128,6 +134,11 @@ export default function App() {
       checkLoaded();
     });
 
+    const unsubNotifications = subscribeToCollection<import('./types').SystemNotification>('notifications', (data) => {
+      setNotifications(data);
+      checkLoaded();
+    }, 'createdAt');
+
     // Migration from localStorage to Firestore (Once)
     const performMigration = async (collName: string, storageKey: string) => {
       try {
@@ -172,6 +183,7 @@ export default function App() {
       unsubTransactions();
       unsubUsers();
       unsubSettings();
+      unsubNotifications();
     };
   }, [session, isFirebaseReady]);
 
@@ -263,6 +275,29 @@ export default function App() {
 
         if (status === 'returned') {
           const client = clients.find(c => c.id === tx.clientId);
+          
+          // Criar notificação interna automática
+          const notification: Omit<import('./types').SystemNotification, 'id'> = {
+            title: 'Cheque Devolvido!',
+            message: `O cheque nº ${tx.checkNumber} de ${tx.issuer} (Valor: R$ ${tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}) foi marcado como DEVOLVIDO.`,
+            type: 'error',
+            read: false,
+            createdAt: new Date().toISOString(),
+            metadata: {
+              transactionId: tx.id,
+              clientId: tx.clientId
+            }
+          };
+          await saveItem('notifications', notification);
+
+          // Disparar notificação nativa do navegador (Push)
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Alerta Financeiro: Cheque Devolvido", {
+              body: `Cheque nº ${tx.checkNumber} - ${tx.issuer} devolvido.`,
+              icon: '/icon-192x192.png' // Assumindo que existe, ou omitir
+            });
+          }
+
           if (client && client.status === 'active') {
              await saveItem('clients', { ...client, status: 'blocked' });
           }
@@ -366,6 +401,7 @@ export default function App() {
             transactions={transactions} 
             clients={clients} 
             banks={banks} 
+            settings={settings}
             onUpdateStatus={handleUpdateTransaction} 
             onDeleteTransaction={handleDeleteTransaction}
             onEditTransaction={handleEditTransaction}
@@ -466,6 +502,17 @@ export default function App() {
     }
   };
 
+  const handleClearNotifications = async () => {
+    for (const notification of notifications) {
+      if (!notification.read) {
+        await saveItem('notifications', { ...notification, read: true });
+      }
+    }
+  };
+
+  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+  const returnedCount = transactions.filter(t => t.status === 'returned').length;
+
   return (
     <div className="min-h-screen bg-slate-50 flex print:bg-white">
       <Sidebar 
@@ -474,6 +521,9 @@ export default function App() {
         authRole={session.role} 
         authName={session.name} 
         onLogout={handleLogout} 
+        returnedCount={returnedCount}
+        notificationsCount={unreadNotificationsCount}
+        onClearNotifications={handleClearNotifications}
       />
       
       <main className="ml-64 p-10 print:ml-0 print:p-0 relative flex-1">

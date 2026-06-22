@@ -175,12 +175,14 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onSave, o
                     </td>
                     <td className="px-6 py-4">
                       <button 
-                        onClick={() => toggleStatus(client)}
+                        onClick={() => (role === 'admin' || client.status === 'active') && toggleStatus(client)}
+                        disabled={role !== 'admin' && client.status === 'blocked'}
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-colors ${
                           client.status === 'active' 
                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
                             : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
-                        }`}
+                        } ${role === 'admin' || (role !== 'admin' && client.status === 'active') ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'}`}
+                        title={role !== 'admin' && client.status === 'blocked' ? "Apenas administradores podem desbloquear clientes" : (client.status === 'active' ? "Bloquear Cliente" : "Desbloquear Cliente")}
                       >
                         {client.status === 'active' ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                         {client.status === 'active' ? 'Ativo' : 'Bloqueado'}
@@ -188,6 +190,15 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ clients, onSave, o
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        {role === 'admin' && client.status === 'blocked' && (
+                          <button 
+                            onClick={() => toggleStatus(client)}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-emerald-100"
+                            title="Desbloquear Cliente (Ação de Admin)"
+                          >
+                            <Unlock className="w-4 h-4" />
+                          </button>
+                        )}
                         <button 
                           onClick={() => { setEditingClient(client); setIsModalOpen(true); }}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

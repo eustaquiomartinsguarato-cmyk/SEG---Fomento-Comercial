@@ -1,6 +1,6 @@
 {
   "name": "S.E.G",
-  "description": "Professional factoring and cheque discounting management system with real-time metrics and automated interest calculations.",
+  "description": "Sistema profissional de gestão de factoring e desconto de cheques com métricas em tempo real e cálculos automatizados de juros.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

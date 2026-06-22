@@ -16,7 +16,8 @@ import {
   CalendarDays, 
   Settings,
   ChevronRight,
-  LogOut
+  LogOut,
+  Bell
 } from 'lucide-react';
 import { View } from '../types';
 
@@ -26,11 +27,23 @@ interface SidebarProps {
   authRole: string;
   authName: string;
   onLogout: () => void;
+  returnedCount: number;
+  notificationsCount: number;
+  onClearNotifications: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, authRole, authName, onLogout }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  activeView, 
+  onViewChange, 
+  authRole, 
+  authName, 
+  onLogout, 
+  returnedCount,
+  notificationsCount,
+  onClearNotifications
+}) => {
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
     { id: 'clients', label: 'Clientes', icon: Users },
     { id: 'banks', label: 'Bancos', icon: Building2 },
     { type: 'divider', label: 'Operações' },
@@ -51,11 +64,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, auth
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-brand-dark text-white flex flex-col shadow-xl z-50 print:hidden">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center font-bold text-xl shadow-lg">
-          S
+      <div className="p-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center font-bold text-xl shadow-lg">
+            S
+          </div>
+          <span className="text-xl font-bold tracking-tight">S.E.G</span>
         </div>
-        <span className="text-xl font-bold tracking-tight">S.E.G</span>
+        
+        {notificationsCount > 0 && (
+          <button 
+            onClick={onClearNotifications}
+            className="relative p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all group"
+            title="Limpar Notificações"
+          >
+            <Bell className="w-5 h-5 group-hover:animate-shake" />
+            <span className="absolute top-1 right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[8px] font-black text-white flex items-center justify-center">
+                {notificationsCount}
+              </span>
+            </span>
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
@@ -86,6 +117,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange, auth
                 >
                   <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-brand-primary transition-colors'}`} />
                   <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+                  {item.id === 'returned' && returnedCount > 0 && (
+                    <div className="relative flex items-center justify-center mr-1">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-600 text-[10px] font-black text-white">
+                        {returnedCount}
+                      </span>
+                    </div>
+                  )}
                   {isActive && <ChevronRight className="w-4 h-4 opacity-70" />}
                 </button>
               </li>

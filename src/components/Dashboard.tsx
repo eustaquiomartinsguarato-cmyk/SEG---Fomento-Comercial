@@ -149,7 +149,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, ban
     <div className="space-y-8 animate-fade-in">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Painel de Controle</h1>
           <p className="text-slate-500 text-sm">Bem-vindo ao centro de operações da Factori.</p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600 self-start md:self-auto">
@@ -160,23 +160,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, ban
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 hover:shadow-md transition-shadow"
-          >
-            <div className={`p-3 rounded-lg ${stat.bg}`}>
-              <stat.icon className={`w-6 h-6 ${stat.color}`} />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{stat.label}</p>
-              <p className="text-xl font-bold text-slate-800">{stat.value}</p>
-            </div>
-          </motion.div>
-        ))}
+        {stats.map((stat, i) => {
+          const isReturned = stat.label === 'Títulos Devolvidos' && returnedCount > 0;
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              onClick={() => stat.label === 'Títulos Devolvidos' && onNavigate('returned')}
+              className={`relative bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 hover:shadow-md transition-all ${
+                stat.label === 'Títulos Devolvidos' ? 'cursor-pointer' : ''
+              } ${isReturned ? 'ring-2 ring-rose-500 ring-offset-2' : ''}`}
+            >
+              {isReturned && (
+                <div className="absolute top-3 right-3 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-rose-600 text-[8px] font-black text-white flex items-center justify-center">
+                    {returnedCount}
+                  </span>
+                </div>
+              )}
+              <div className={`p-3 rounded-lg ${isReturned ? 'bg-rose-50' : stat.bg}`}>
+                <stat.icon className={`w-6 h-6 ${isReturned ? 'text-rose-600' : stat.color}`} />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{stat.label}</p>
+                <p className={`text-xl font-bold ${isReturned ? 'text-rose-600' : 'text-slate-800'}`}>{stat.value}</p>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Seção Vencimentos de Hoje por Abas */}
@@ -588,16 +602,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, ban
                         }`}
                       >
                         <td className="px-6 py-4">
-                          <div className="font-medium text-slate-700">{client?.name || 'Desconhecido'}</div>
-                          <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
-                            tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
-                            tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
-                            'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
-                          }`}>
-                            {tx.operationType === 'promissoria' ? 'PROMISSÓRIA' :
-                             tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
-                             'CHEQUE'}
-                          </span>
+                          <div className="font-bold text-slate-800 text-[11px] uppercase truncate max-w-[180px]">{client?.name || 'Desconhecido'}</div>
+                          {tx.issuer && (
+                            <div className="text-[9px] text-slate-500 font-bold uppercase truncate max-w-[180px]">
+                              {tx.issuer}
+                            </div>
+                          )}
+                          <div className="mt-1">
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
+                              tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
+                              tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
+                              'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
+                            }`}>
+                              {tx.operationType === 'promissoria' ? 'PROMISSÓRIA' :
+                               tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
+                               'CHEQUE'}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-slate-500 text-xs">{new Date(tx.createdAt).toLocaleDateString('pt-BR')}</td>
                         <td className="px-6 py-4 font-semibold text-slate-800">

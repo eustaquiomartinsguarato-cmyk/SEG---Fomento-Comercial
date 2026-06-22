@@ -19,7 +19,9 @@ import {
   Percent, 
   TrendingUp,
   Search,
-  Check
+  Check,
+  MessageCircle,
+  MessageSquare
 } from 'lucide-react';
 import { Client, Bank, Transaction, SystemSettings, TransactionStatus } from '../types';
 import { calculateDaysDiff, calculateInstallmentInterest } from '../lib/calculations';
@@ -180,6 +182,34 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
     setEditingTx(null);
   };
 
+  const handleNotifyClient = (tx: Transaction) => {
+    const client = clients.find(c => c.id === tx.clientId);
+    if (!client) return;
+
+    const value = tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const message = `Olá *${client.name}*, informamos que o cheque nº *${tx.checkNumber}* (Emitente: ${tx.issuer}) no valor de *R$ ${value}* foi devolvido em nosso sistema. Favor entrar em contato para regularização. Att: *${settings.companyName || 'Financeiro'}*`;
+    
+    // Clean phone number (keep only digits)
+    const phone = client.phone.replace(/\D/g, '');
+    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(url, '_blank');
+  };
+
+  const handleNotifySMS = (tx: Transaction) => {
+    const client = clients.find(c => c.id === tx.clientId);
+    if (!client) return;
+
+    const value = tx.grossValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    // Plain text for SMS (no markdown bold)
+    const message = `Olá ${client.name}, informamos que o cheque nº ${tx.checkNumber} (Emitente: ${tx.issuer}) no valor de R$ ${value} foi devolvido em nosso sistema. Favor entrar em contato para regularização. Att: ${settings.companyName || 'Financeiro'}`;
+    
+    const phone = client.phone.replace(/\D/g, '');
+    const url = `sms:+55${phone}?body=${encodeURIComponent(message)}`;
+    
+    window.location.href = url;
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -265,13 +295,21 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                     <tr 
                       key={tx.id} 
                       className={`transition-colors group ${
+                        subView === 'pending' ? 'animate-pulse' : ''
+                      } ${
                         index % 2 === 0 ? 'bg-white' : 'bg-zebra-table'
                       }`}
                     >
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-800">{client?.name || 'Cliente excluído'}</div>
+                        <div className="font-bold text-slate-800 text-[11px] uppercase truncate max-w-[200px]">{client?.name || 'Cliente excluído'}</div>
+                        {tx.issuer && (
+                          <div className="text-[10px] text-slate-600 mt-0.5 font-bold uppercase overflow-visible">
+                            <span className="text-slate-400 font-extrabold text-[8px] mr-1">EMIT:</span>
+                            {tx.issuer}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ring-1 ring-inset ${
+                          <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase ring-1 ring-inset ${
                             tx.operationType === 'promissoria' ? 'bg-amber-50 text-amber-600 ring-amber-500/20' :
                             tx.operationType === 'nota_fiscal' ? 'bg-blue-50 text-blue-600 ring-blue-500/20' :
                             'bg-indigo-50 text-indigo-600 ring-indigo-500/20'
@@ -280,10 +318,9 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                              tx.operationType === 'nota_fiscal' ? 'NOTA FISCAL' :
                              'CHEQUE'}
                           </span>
-                          <span className="text-xs text-rose-600 font-semibold truncate">Emitente: {tx.issuer}</span>
                         </div>
                         {tx.returnReason && (
-                          <div className="text-[10px] text-slate-400 italic mt-0.5">
+                          <div className="text-[10px] text-slate-400 italic mt-0.5 border-t border-slate-50 pt-1">
                             Motivo: {tx.returnReason}
                           </div>
                         )}
@@ -340,13 +377,29 @@ export const ReturnedChecksManager: React.FC<ReturnedChecksManagerProps> = ({
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
                           {tx.status === 'returned' && (
-                            <button
-                              onClick={() => handleOpenSettlement(tx)}
-                              className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1 shadow-md shadow-emerald-50"
-                              title="Registrar recebimento de acerto"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Acertar
-                            </button>
+                            <>
+                                <button
+                                  onClick={() => handleNotifyClient(tx)}
+                                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all flex items-center gap-1 border border-indigo-100"
+                                  title="Notificar via WhatsApp"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                                </button>
+                                  <button
+                                    onClick={() => handleNotifySMS(tx)}
+                                    className="px-3 py-1.5 bg-slate-50 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-100 transition-all flex items-center gap-1 border border-slate-100"
+                                    title="Notificar via SMS (Abre app do celular)"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" /> SMS (Manual)
+                                  </button>
+                              <button
+                                onClick={() => handleOpenSettlement(tx)}
+                                className="px-3 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1 shadow-md shadow-emerald-50"
+                                title="Registrar recebimento de acerto"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Acertar
+                              </button>
+                            </>
                           )}
                           <button
                             onClick={() => handleOpenEditRates(tx)}
