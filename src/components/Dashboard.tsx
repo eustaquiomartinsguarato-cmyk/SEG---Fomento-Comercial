@@ -150,7 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ clients, transactions, ban
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Painel de Controle</h1>
-          <p className="text-slate-500 text-sm">Bem-vindo ao centro de operações da Factori.</p>
+          <p className="text-slate-500 text-sm">Bem-vindo ao centro de operações da Factory.</p>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 bg-slate-100 rounded-lg text-slate-600 self-start md:self-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

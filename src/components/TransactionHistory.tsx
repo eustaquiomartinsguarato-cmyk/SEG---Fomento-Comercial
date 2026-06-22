@@ -177,7 +177,7 @@ export const TransactionHistory: React.FC<HistoryManagerProps> = ({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "transacoes_factori.csv";
+    link.download = "transacoes_factory.csv";
     link.click();
   };
 

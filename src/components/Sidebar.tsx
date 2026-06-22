@@ -30,6 +30,7 @@ interface SidebarProps {
   returnedCount: number;
   notificationsCount: number;
   onClearNotifications: () => void;
+  showLoader: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -40,7 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout, 
   returnedCount,
   notificationsCount,
-  onClearNotifications
+  onClearNotifications,
+  showLoader
 }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
@@ -108,7 +110,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <li key={item.id}>
                 <button
-                  onClick={() => onViewChange(item.id as View)}
+                  onClick={() => {
+                    showLoader();
+                    onViewChange(item.id as View);
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${
                     isActive 
                       ? 'bg-brand-primary text-white shadow-md' 

@@ -26,6 +26,7 @@ import { db, saveItem, deleteItem, subscribeToCollection, auth, loginAnonymously
 import { motion, AnimatePresence } from 'motion/react';
 import { Settings, Info, CreditCard, LogOut, ExternalLink, AlertCircle } from 'lucide-react';
 import { UserManager } from './components/UserManager';
+import { GlobalLoader } from './components/GlobalLoader';
 
 export default function App() {
   const [session, setSession] = useState<{ role: UserRole, name: string, username: string } | null>(() => {
@@ -47,6 +48,14 @@ export default function App() {
 
   const [isFirebaseReady, setIsFirebaseReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showOverlay, setShowOverlay] = useState(false);
+
+  const triggerLoader = () => {
+    setShowOverlay(true);
+    setTimeout(() => {
+      setShowOverlay(false);
+    }, 1000);
+  };
 
   useEffect(() => {
     // Listen for Firebase auth state Changes
@@ -480,7 +489,7 @@ export default function App() {
               <Info className="w-6 h-6 text-blue-500 shrink-0" />
               <div className="text-sm text-blue-800 space-y-2">
                 <p className="font-bold">Sincronização em Tempo Real</p>
-                <p>Todos os dados do Factori são persistidos com segurança na nuvem (Firestore) e sincronizados em tempo real entre seus dispositivos.</p>
+                <p>Todos os dados do Factory são persistidos com segurança na nuvem (Firestore) e sincronizados em tempo real entre seus dispositivos.</p>
               </div>
             </div>
           </div>
@@ -515,6 +524,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex print:bg-white">
+      <GlobalLoader isVisible={showOverlay} />
       <Sidebar 
         activeView={activeView} 
         onViewChange={setActiveView} 
@@ -524,6 +534,7 @@ export default function App() {
         returnedCount={returnedCount}
         notificationsCount={unreadNotificationsCount}
         onClearNotifications={handleClearNotifications}
+        showLoader={triggerLoader}
       />
       
       <main className="ml-64 p-10 print:ml-0 print:p-0 relative flex-1">
